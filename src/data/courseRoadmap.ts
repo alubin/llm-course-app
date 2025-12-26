@@ -93,6 +93,17 @@ export const courseRoadmap: CourseDay[] = [
     topics: ["Data Ingestion", "Batch Processing", "AI Classification", "Data Validation", "Output Generation"],
     project: "ML Data Pipeline",
     icon: "Workflow"
+  },
+  {
+    id: 8,
+    title: "ML Systems for Production",
+    description: "Design and deploy production ML systems: search, recommendations, and serving",
+    duration: "6-8 hours",
+    language: "Python",
+    status: "available",
+    topics: ["Search Ranking", "Recommendation Systems", "Model Serving", "Inference Optimization", "ML System Design"],
+    project: "Production ML System",
+    icon: "Layers"
   }
 ];
 

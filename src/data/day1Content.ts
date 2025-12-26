@@ -271,6 +271,249 @@ messages = [
           `
         },
         {
+          id: "llm-architectures",
+          title: "LLM Architecture Variants",
+          content: `
+### Three Families of Transformers
+
+Modern LLMs come in three architectural flavors, each suited for different tasks:
+
+\`\`\`
+┌─────────────────────────────────────────────────────────────────┐
+│              TRANSFORMER ARCHITECTURE FAMILIES                   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   ENCODER-ONLY          ENCODER-DECODER        DECODER-ONLY    │
+│   (BERT, RoBERTa)       (T5, BART)            (GPT, LLaMA)     │
+│                                                                 │
+│   ┌───────────┐        ┌───────────┐        ┌───────────┐      │
+│   │ Encoder   │        │ Encoder   │        │ Decoder   │      │
+│   │           │        │     ↓     │        │           │      │
+│   │ [Bi-dir]  │        │ Decoder   │        │ [Causal]  │      │
+│   └───────────┘        └───────────┘        └───────────┘      │
+│                                                                 │
+│   Best for:            Best for:             Best for:          │
+│   • Classification     • Translation         • Text generation  │
+│   • Named Entity       • Summarization       • Chatbots         │
+│     Recognition        • Question-Answer     • Code completion  │
+│   • Sentiment          • Text-to-Text        • Creative writing │
+│                                                                 │
+│   Examples:            Examples:             Examples:          │
+│   BERT, RoBERTa,       T5, BART, mT5,       GPT-4, Claude,     │
+│   DistilBERT,          FLAN-T5              LLaMA, Mistral     │
+│   XLM-RoBERTa                                                  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+\`\`\`
+
+### Why Decoder-Only Dominates Today
+
+Modern chatbots and assistants use **decoder-only** architectures because:
+
+1. **Simpler to scale** - One unified architecture
+2. **Better at generation** - Optimized for producing text
+3. **Emergent abilities** - Complex reasoning appears at scale
+4. **Unified training** - Same architecture for all tasks
+
+### Attention Patterns
+
+\`\`\`
+Encoder (Bidirectional):       Decoder (Causal/Masked):
+  A B C D                        A B C D
+A ✓ ✓ ✓ ✓                      A ✓ ✗ ✗ ✗
+B ✓ ✓ ✓ ✓                      B ✓ ✓ ✗ ✗
+C ✓ ✓ ✓ ✓                      C ✓ ✓ ✓ ✗
+D ✓ ✓ ✓ ✓                      D ✓ ✓ ✓ ✓
+
+Each token sees ALL            Each token sees only
+other tokens                   PREVIOUS tokens
+\`\`\`
+
+### Small Language Models (SLMs)
+
+Not all tasks need massive models. **SLMs** are smaller, faster alternatives:
+
+| Model | Parameters | Use Case |
+|-------|-----------|----------|
+| DistilBERT | 66M | Fast classification |
+| TinyBERT | 15M | Mobile/edge devices |
+| Phi-3 Mini | 3.8B | Efficient generation |
+| Gemma 2B | 2B | On-device AI |
+
+> **Rule of Thumb**: Start with the smallest model that works, then scale up if needed.
+          `
+        },
+        {
+          id: "math-foundations",
+          title: "Mathematical Foundations (Quick Reference)",
+          content: `
+### Essential Math for LLMs
+
+You don't need a PhD, but understanding these concepts helps:
+
+### 1. Vectors and Embeddings
+
+Text becomes vectors (lists of numbers):
+
+\`\`\`python
+# A word embedding is just a vector
+"king"  → [0.23, 0.45, -0.12, 0.89, ...]  # 1536 dimensions
+
+# Similar meanings = similar vectors
+"king" - "man" + "woman" ≈ "queen"  # Vector arithmetic!
+\`\`\`
+
+### 2. Dot Product (Similarity)
+
+How attention scores are calculated:
+
+\`\`\`python
+import numpy as np
+
+def dot_product(a, b):
+    """Higher = more similar."""
+    return np.sum(a * b)
+
+# Example
+query = np.array([1, 0, 1])
+key1 = np.array([1, 0, 1])   # Similar
+key2 = np.array([0, 1, 0])   # Different
+
+print(dot_product(query, key1))  # 2 (high similarity)
+print(dot_product(query, key2))  # 0 (no similarity)
+\`\`\`
+
+### 3. Softmax (Probability Distribution)
+
+Converts scores into probabilities that sum to 1:
+
+\`\`\`python
+def softmax(x):
+    """Convert scores to probabilities."""
+    exp_x = np.exp(x - np.max(x))  # Numerical stability
+    return exp_x / exp_x.sum()
+
+scores = [2.0, 1.0, 0.1]
+probs = softmax(scores)
+print(probs)  # [0.659, 0.242, 0.099] - sums to 1.0
+\`\`\`
+
+### 4. Matrix Multiplication
+
+The core operation in neural networks:
+
+\`\`\`
+Input [batch, seq_len, d_model] × Weight [d_model, d_model]
+                    ↓
+         Output [batch, seq_len, d_model]
+\`\`\`
+
+### 5. Probability Basics
+
+LLMs are next-token predictors:
+
+\`\`\`
+P("is" | "The cat") = 0.3      # 30% chance
+P("sat" | "The cat") = 0.2     # 20% chance
+P("runs" | "The cat") = 0.1    # 10% chance
+...
+Sum of all probabilities = 1.0
+\`\`\`
+
+### Resources for Deep Dives
+
+- **3Blue1Brown** - Visual linear algebra (YouTube)
+- **StatQuest** - Statistics and ML (YouTube)
+- **"Attention Is All You Need"** - Original transformer paper
+          `
+        },
+        {
+          id: "sampling-strategies",
+          title: "Decoding & Sampling Strategies",
+          content: `
+### How LLMs Choose the Next Token
+
+After computing probabilities, how does the model pick the next word?
+
+### Greedy Decoding
+
+Always pick the highest probability token:
+
+\`\`\`python
+# Probabilities: {"The": 0.4, "A": 0.3, "Some": 0.2, ...}
+next_token = "The"  # Always pick highest
+\`\`\`
+
+**Pros**: Deterministic, fast
+**Cons**: Repetitive, boring output
+
+### Temperature Sampling
+
+Adjust the probability distribution:
+
+\`\`\`python
+def apply_temperature(logits, temperature):
+    """
+    temperature < 1: More focused (conservative)
+    temperature > 1: More random (creative)
+    """
+    return logits / temperature
+
+# Low temp (0.3): [0.8, 0.15, 0.05] → Very focused
+# High temp (1.5): [0.4, 0.35, 0.25] → More varied
+\`\`\`
+
+### Top-K Sampling
+
+Only consider the top K tokens:
+
+\`\`\`python
+def top_k_sampling(probs, k=50):
+    """Only sample from top K tokens."""
+    top_k_probs, top_k_indices = probs.topk(k)
+    return sample_from(top_k_probs)
+\`\`\`
+
+### Top-P (Nucleus) Sampling
+
+Sample from tokens that make up P% of probability:
+
+\`\`\`python
+def top_p_sampling(probs, p=0.9):
+    """
+    Sample from smallest set of tokens
+    whose cumulative probability >= p.
+    """
+    sorted_probs = sort(probs, descending=True)
+    cumsum = cumulative_sum(sorted_probs)
+    cutoff = find_index(cumsum >= p)
+    return sample_from(sorted_probs[:cutoff])
+\`\`\`
+
+### Beam Search
+
+Keep track of multiple candidate sequences:
+
+\`\`\`
+Beam 1: "The cat" → "The cat sat" → "The cat sat on"
+Beam 2: "The dog" → "The dog ran" → "The dog ran fast"
+Beam 3: "A bird" → "A bird flew" → "A bird flew away"
+→ Pick best final sequence
+\`\`\`
+
+**Best for**: Translation, summarization (deterministic quality)
+
+### Practical Recommendations
+
+| Task | Temperature | Top-P | Strategy |
+|------|------------|-------|----------|
+| Code | 0.0-0.3 | 0.1 | Near-deterministic |
+| Factual Q&A | 0.3-0.5 | 0.5 | Focused |
+| Creative Writing | 0.7-1.0 | 0.9 | Varied |
+| Brainstorming | 1.0-1.5 | 0.95 | Exploratory |
+          `
+        },
+        {
           id: "streaming",
           title: "Streaming vs. Non-Streaming",
           content: `

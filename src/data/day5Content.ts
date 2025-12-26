@@ -306,6 +306,455 @@ model = AutoModelForCausalLM.from_pretrained(
 | LoRA | 40GB | Good balance of performance and efficiency |
 | QLoRA | 16-24GB | Consumer GPUs, experimentation |
           `
+        },
+        {
+          id: "quantization-deep-dive",
+          title: "Model Quantization Deep Dive",
+          content: `
+### Why Quantization Matters
+
+Quantization reduces model size and memory usage by using lower-precision numbers:
+
+\`\`\`
+┌─────────────────────────────────────────────────────────────────┐
+│                    PRECISION LEVELS                              │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   FP32 (Full)      FP16 (Half)     INT8           INT4         │
+│   ───────────      ───────────     ────           ────         │
+│   32 bits/param    16 bits/param   8 bits/param   4 bits/param │
+│   7B = 28GB        7B = 14GB       7B = 7GB       7B = 3.5GB   │
+│                                                                 │
+│   Accuracy:        Accuracy:       Accuracy:      Accuracy:     │
+│   Baseline         ~Same           ~1% drop       ~2-5% drop   │
+│                                                                 │
+│   Speed:           Speed:          Speed:         Speed:        │
+│   1x               ~2x             ~2-3x          ~3-4x         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+\`\`\`
+
+### Quantization Formats Explained
+
+#### GGUF (llama.cpp)
+
+Most popular for local/CPU inference:
+
+\`\`\`bash
+# Common GGUF quantization levels
+Q4_K_M   # 4-bit, medium quality (most popular)
+Q5_K_M   # 5-bit, better quality
+Q6_K     # 6-bit, near-original quality
+Q8_0     # 8-bit, minimal quality loss
+
+# Example: Download a GGUF model
+# From Hugging Face: TheBloke/Llama-2-7B-GGUF
+\`\`\`
+
+\`\`\`python
+# Using llama-cpp-python
+from llama_cpp import Llama
+
+llm = Llama(
+    model_path="./models/llama-2-7b.Q4_K_M.gguf",
+    n_ctx=4096,      # Context length
+    n_gpu_layers=35  # Layers to offload to GPU
+)
+
+response = llm("What is Python?", max_tokens=256)
+\`\`\`
+
+#### GPTQ (GPU Quantization)
+
+Optimized for GPU inference:
+
+\`\`\`python
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+# Load GPTQ quantized model
+model = AutoModelForCausalLM.from_pretrained(
+    "TheBloke/Llama-2-7B-GPTQ",
+    device_map="auto",
+    trust_remote_code=True
+)
+
+# GPTQ calibrates on a small dataset for better accuracy
+\`\`\`
+
+#### AWQ (Activation-aware Weight Quantization)
+
+Better quality than GPTQ at same size:
+
+\`\`\`python
+from awq import AutoAWQForCausalLM
+
+# Load AWQ model
+model = AutoAWQForCausalLM.from_pretrained(
+    "TheBloke/Llama-2-7B-AWQ",
+    device="cuda"
+)
+
+# AWQ preserves important weights, quantizes less important ones
+\`\`\`
+
+### Quantization Comparison
+
+| Format | Best For | Pros | Cons |
+|--------|----------|------|------|
+| **GGUF** | CPU/Mixed inference | Works everywhere, flexible | Slower on GPU-only |
+| **GPTQ** | GPU inference | Fast GPU inference | GPU required |
+| **AWQ** | Quality-critical GPU | Best quality/size ratio | Newer, less tooling |
+| **bitsandbytes** | Training (QLoRA) | Easy integration | Training focused |
+
+### Creating Quantized Models
+
+\`\`\`python
+# Quantize with llama.cpp
+# 1. Convert to GGUF format
+python convert.py ./model --outtype f16
+
+# 2. Quantize
+./quantize ./model-f16.gguf ./model-q4_k_m.gguf Q4_K_M
+\`\`\`
+
+\`\`\`python
+# Quantize with AutoGPTQ
+from auto_gptq import AutoGPTQForCausalLM
+
+# Load and quantize
+model = AutoGPTQForCausalLM.from_pretrained(
+    "meta-llama/Llama-2-7b-hf",
+    quantize_config=quantize_config
+)
+
+# Calibrate (important for quality!)
+model.quantize(calibration_data)
+
+# Save
+model.save_quantized("./llama2-7b-gptq")
+\`\`\`
+          `
+        },
+        {
+          id: "preference-alignment",
+          title: "Preference Alignment (RLHF & DPO)",
+          content: `
+### The Alignment Problem
+
+Fine-tuned models can follow instructions but may still be:
+- Unhelpful or verbose
+- Incorrect but confident
+- Potentially harmful
+
+**Alignment** makes models behave according to human preferences.
+
+\`\`\`
+┌─────────────────────────────────────────────────────────────────┐
+│                    ALIGNMENT PIPELINE                            │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   Pre-trained    SFT Model      Aligned Model                   │
+│   Model    ──►   (Day 5)   ──►  (RLHF/DPO)                     │
+│                                                                 │
+│   Predicts       Follows        Helpful, harmless,              │
+│   next token     instructions   honest responses                │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+\`\`\`
+
+### RLHF (Reinforcement Learning from Human Feedback)
+
+The original alignment method (used by ChatGPT):
+
+\`\`\`
+Step 1: Collect Human Preferences
+─────────────────────────────────
+Prompt: "Explain quantum computing"
+
+Response A: [Technical, accurate, long]
+Response B: [Simple, accessible, concise]
+
+Human ranks: B > A (prefers simplicity)
+
+Step 2: Train Reward Model
+──────────────────────────
+Learns to predict human preferences:
+reward(prompt, response) → score
+
+Step 3: Optimize with PPO
+─────────────────────────
+Use RL to maximize reward while staying
+close to original model (KL penalty)
+\`\`\`
+
+**RLHF is complex**: Requires reward model training + PPO optimization.
+
+### DPO (Direct Preference Optimization)
+
+Simpler alternative - no reward model needed:
+
+\`\`\`python
+from trl import DPOTrainer, DPOConfig
+
+# DPO directly optimizes on preference pairs
+training_args = DPOConfig(
+    output_dir="./dpo_output",
+    per_device_train_batch_size=4,
+    learning_rate=5e-7,
+    num_train_epochs=1,
+    beta=0.1,  # KL penalty strength
+)
+
+# Dataset format: chosen vs rejected responses
+# {"prompt": "...", "chosen": "good response", "rejected": "bad response"}
+
+trainer = DPOTrainer(
+    model=model,
+    ref_model=ref_model,  # Frozen copy
+    args=training_args,
+    train_dataset=preference_dataset,
+    tokenizer=tokenizer,
+)
+
+trainer.train()
+\`\`\`
+
+### RLHF vs DPO Comparison
+
+| Aspect | RLHF | DPO |
+|--------|------|-----|
+| **Complexity** | High (reward model + PPO) | Low (single training) |
+| **Compute** | 3-4x more | ~1.5x base training |
+| **Quality** | Slightly better | Very close |
+| **Stability** | Can be unstable | More stable |
+| **Adoption** | GPT-4, Claude | Llama 2, Mistral |
+
+### Creating Preference Data
+
+\`\`\`python
+# Generate preference pairs
+def create_preference_pair(prompt, model):
+    # Generate multiple responses
+    responses = [model.generate(prompt) for _ in range(4)]
+
+    # Have humans (or strong model) rank them
+    ranked = rank_by_quality(responses)
+
+    return {
+        "prompt": prompt,
+        "chosen": ranked[0],    # Best response
+        "rejected": ranked[-1]  # Worst response
+    }
+\`\`\`
+
+### Rejection Sampling (Simple Alignment)
+
+Generate many, keep the best:
+
+\`\`\`python
+def rejection_sampling(prompt, model, reward_model, n=16):
+    """Generate n responses, return highest scoring."""
+    responses = [model.generate(prompt) for _ in range(n)]
+    scores = [reward_model.score(prompt, r) for r in responses]
+    best_idx = scores.index(max(scores))
+    return responses[best_idx]
+\`\`\`
+          `
+        },
+        {
+          id: "model-evaluation",
+          title: "LLM Evaluation & Benchmarks",
+          content: `
+### Why Evaluation is Hard
+
+LLMs do many things - no single metric captures everything.
+
+\`\`\`
+┌─────────────────────────────────────────────────────────────────┐
+│                    EVALUATION APPROACHES                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   AUTOMATED BENCHMARKS        HUMAN EVALUATION                  │
+│   ────────────────────        ────────────────                  │
+│   • MMLU (knowledge)          • Preference rankings             │
+│   • HumanEval (code)          • A/B testing                     │
+│   • GSM8K (math)              • Chatbot Arena (ELO)             │
+│   • TruthfulQA                • Expert evaluation               │
+│                                                                 │
+│   MODEL-AS-JUDGE              TASK-SPECIFIC                     │
+│   ──────────────              ─────────────                     │
+│   • GPT-4 evaluation          • BLEU (translation)              │
+│   • Claude grading            • ROUGE (summarization)           │
+│   • Reward models             • F1 (extraction)                 │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+\`\`\`
+
+### Key Benchmarks
+
+| Benchmark | Tests | Used For |
+|-----------|-------|----------|
+| **MMLU** | 57 subjects, multiple choice | General knowledge |
+| **HumanEval** | Python coding problems | Code generation |
+| **GSM8K** | Grade school math | Reasoning |
+| **TruthfulQA** | Factual accuracy | Hallucination |
+| **MT-Bench** | Multi-turn conversation | Chat quality |
+| **AlpacaEval** | Instruction following | Helpfulness |
+
+### Running Evaluations
+
+\`\`\`python
+# Using lm-evaluation-harness
+from lm_eval import evaluator
+
+results = evaluator.simple_evaluate(
+    model="hf",
+    model_args="pretrained=your-model",
+    tasks=["mmlu", "hellaswag", "arc_easy"],
+    num_fewshot=5,
+    batch_size=8
+)
+
+print(results["results"])
+# {'mmlu': {'acc': 0.65}, 'hellaswag': {'acc': 0.78}, ...}
+\`\`\`
+
+### Chatbot Arena (Human Eval)
+
+Real users vote on anonymous model responses:
+
+\`\`\`
+User asks: "Explain recursion"
+
+Model A: [Response]  vs  Model B: [Response]
+
+User votes: A wins / B wins / Tie
+
+→ ELO rating calculated across thousands of votes
+\`\`\`
+
+**Leaderboard**: https://chat.lmsys.org/?leaderboard
+
+### Model-as-Judge
+
+Use a strong model to evaluate a weaker one:
+
+\`\`\`python
+def llm_judge(question, answer, judge_model):
+    prompt = f"""
+    Rate this answer on a scale of 1-10.
+
+    Question: {question}
+    Answer: {answer}
+
+    Consider:
+    - Accuracy (is it correct?)
+    - Helpfulness (does it address the question?)
+    - Clarity (is it well-explained?)
+
+    Score (1-10):
+    Reasoning:
+    """
+
+    evaluation = judge_model.generate(prompt)
+    return parse_score(evaluation)
+\`\`\`
+
+### Evaluation Best Practices
+
+1. **Use multiple benchmarks** - No single metric tells the whole story
+2. **Include human evaluation** - Especially for subjective quality
+3. **Test on your specific use case** - General benchmarks may not reflect your needs
+4. **Watch for contamination** - Models may have seen benchmark data
+5. **Track over time** - Regression testing as you iterate
+          `
+        },
+        {
+          id: "new-trends",
+          title: "Emerging Trends & Techniques",
+          content: `
+### Model Merging
+
+Combine multiple fine-tuned models without training:
+
+\`\`\`python
+# Using mergekit
+# mergekit-yaml merge_config.yaml ./merged_model
+
+# Example config (SLERP merge):
+# models:
+#   - model: model_a
+#   - model: model_b
+# merge_method: slerp
+# parameters:
+#   t: 0.5  # Interpolation factor
+\`\`\`
+
+**Common Merge Methods:**
+- **SLERP**: Spherical interpolation (smooth blending)
+- **TIES**: Trim, Elect, Sign merge (resolves conflicts)
+- **DARE**: Drop and Rescale (drops redundant weights)
+
+### Multimodal Models
+
+LLMs that understand images, audio, video:
+
+\`\`\`python
+# Vision-Language Model (like GPT-4V, LLaVA)
+from transformers import LlavaForConditionalGeneration
+
+model = LlavaForConditionalGeneration.from_pretrained("llava-hf/llava-1.5-7b-hf")
+
+# Process image + text together
+inputs = processor(text="What's in this image?", images=image)
+output = model.generate(**inputs)
+\`\`\`
+
+### Test-Time Compute Scaling
+
+Spend more compute at inference for better answers:
+
+\`\`\`python
+# Simple: Best-of-N sampling
+responses = [model.generate(prompt) for _ in range(10)]
+best = max(responses, key=lambda r: score(r))
+
+# Advanced: Chain-of-Thought prompting
+prompt = f\"\"\"
+{question}
+
+Let's think step by step:
+\"\"\"
+
+# Most advanced: Tree search (o1-style)
+# Model explores multiple reasoning paths
+\`\`\`
+
+### Interpretability
+
+Understanding what's inside the black box:
+
+\`\`\`python
+# Sparse Autoencoders (SAEs) for feature discovery
+# Reveal what concepts neurons represent
+
+# Activation patching
+# Test which components matter for specific behaviors
+
+# Logit lens
+# See what model "thinks" at each layer
+\`\`\`
+
+### Key Papers to Follow
+
+| Topic | Paper/Resource |
+|-------|---------------|
+| Attention | "Attention Is All You Need" (2017) |
+| Scaling Laws | "Scaling Laws for Neural LMs" (2020) |
+| RLHF | "Training LMs to Follow Instructions" (2022) |
+| DPO | "Direct Preference Optimization" (2023) |
+| Mixture of Experts | "Mixtral of Experts" (2024) |
+          `
         }
       ]
     },

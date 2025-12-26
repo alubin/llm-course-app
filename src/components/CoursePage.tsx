@@ -16,6 +16,7 @@ import { day4Content } from '../data/day4Content';
 import { day5Content } from '../data/day5Content';
 import { day6Content } from '../data/day6Content';
 import { day7Content } from '../data/day7Content';
+import { day8Content } from '../data/day8Content';
 import { useProgressContext } from '../hooks/ProgressContext';
 import { DayContent, Module, Task } from '../data/types';
 
@@ -56,7 +57,8 @@ export default function CoursePage(): React.ReactElement {
     '4': day4Content,
     '5': day5Content,
     '6': day6Content,
-    '7': day7Content
+    '7': day7Content,
+    '8': day8Content
   };
 
   const content = contentMap[dayId || '1'] || day1Content;

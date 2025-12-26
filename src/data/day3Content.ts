@@ -332,6 +332,367 @@ results = collection.query(
 )
 \`\`\`
           `
+        },
+        {
+          id: "advanced-rag",
+          title: "Advanced RAG Techniques",
+          content: `
+### Beyond Basic RAG
+
+Basic RAG has limitations. Advanced techniques improve retrieval quality:
+
+\`\`\`
+┌─────────────────────────────────────────────────────────────────┐
+│                    ADVANCED RAG PATTERNS                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   QUERY TRANSFORMATION                                          │
+│   ┌─────────┐    ┌─────────┐    ┌─────────┐                   │
+│   │ Original│ →  │ Rewrite │ →  │ Multiple│                   │
+│   │  Query  │    │  Query  │    │ Queries │                   │
+│   └─────────┘    └─────────┘    └─────────┘                   │
+│                                                                 │
+│   RETRIEVAL ENHANCEMENT                                         │
+│   ┌─────────┐    ┌─────────┐    ┌─────────┐                   │
+│   │Retrieve │ →  │ Rerank  │ →  │ Filter  │                   │
+│   └─────────┘    └─────────┘    └─────────┘                   │
+│                                                                 │
+│   RESPONSE VERIFICATION                                         │
+│   ┌─────────┐    ┌─────────┐    ┌─────────┐                   │
+│   │Generate │ →  │ Verify  │ →  │ Refine  │                   │
+│   └─────────┘    └─────────┘    └─────────┘                   │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+\`\`\`
+
+### 1. HyDE (Hypothetical Document Embedding)
+
+Generate a hypothetical answer, then use IT to search:
+
+\`\`\`python
+def hyde_retrieval(query: str, llm, vectorstore, k: int = 3):
+    """
+    HyDE: Use LLM to generate hypothetical document,
+    then search using THAT embedding.
+    """
+    # Step 1: Generate hypothetical answer
+    hypothetical = llm.generate(f"""
+    Write a detailed passage that would answer: {query}
+    """)
+
+    # Step 2: Search using hypothetical (not original query)
+    results = vectorstore.similarity_search(hypothetical, k=k)
+
+    return results
+
+# Why it works:
+# - Hypothetical answer is closer to actual documents in embedding space
+# - Original query "What is RAG?" → Hypothetical detailed explanation
+# - Hypothetical matches documents better than short query
+\`\`\`
+
+### 2. Query Rewriting & Expansion
+
+Transform user queries into better search queries:
+
+\`\`\`python
+def rewrite_query(query: str, llm) -> list[str]:
+    """Generate multiple search queries from one question."""
+    prompt = f"""
+    Given this question: "{query}"
+
+    Generate 3 different search queries that would help find the answer.
+    Return as a numbered list.
+    """
+
+    response = llm.generate(prompt)
+    queries = parse_numbered_list(response)
+
+    return queries
+
+# Example:
+# Input: "How do I fix authentication errors?"
+# Output:
+# 1. "authentication error troubleshooting guide"
+# 2. "login failed error solutions"
+# 3. "auth token validation debugging"
+\`\`\`
+
+### 3. Reranking with Cross-Encoders
+
+Initial retrieval is fast but imprecise. Rerank for quality:
+
+\`\`\`python
+from sentence_transformers import CrossEncoder
+
+class Reranker:
+    def __init__(self, model_name="cross-encoder/ms-marco-MiniLM-L-6-v2"):
+        self.model = CrossEncoder(model_name)
+
+    def rerank(self, query: str, documents: list[str], top_k: int = 3):
+        """Rerank documents by relevance to query."""
+        # Score each query-document pair
+        pairs = [[query, doc] for doc in documents]
+        scores = self.model.predict(pairs)
+
+        # Sort by score
+        ranked = sorted(zip(documents, scores), key=lambda x: x[1], reverse=True)
+
+        return [doc for doc, score in ranked[:top_k]]
+
+# Usage:
+# 1. Retrieve top 20 with fast vector search
+# 2. Rerank to get top 3 most relevant
+\`\`\`
+
+### 4. Corrective RAG (CRAG)
+
+Evaluate retrieval quality and correct if needed:
+
+\`\`\`python
+def corrective_rag(query: str, retrieved_docs: list, llm):
+    """
+    Evaluate if retrieved docs are relevant.
+    If not, try alternative strategies.
+    """
+    # Step 1: Grade each document
+    grades = []
+    for doc in retrieved_docs:
+        grade = llm.generate(f"""
+        Is this document relevant to the question?
+        Question: {query}
+        Document: {doc}
+        Answer: YES or NO
+        """)
+        grades.append(grade.strip().upper() == "YES")
+
+    # Step 2: Decide strategy
+    relevant_docs = [d for d, g in zip(retrieved_docs, grades) if g]
+
+    if len(relevant_docs) == 0:
+        # No relevant docs → Use web search fallback
+        return web_search_fallback(query)
+    elif len(relevant_docs) < len(retrieved_docs) // 2:
+        # Some relevant → Supplement with additional search
+        additional = broader_search(query)
+        return relevant_docs + additional
+    else:
+        # Most relevant → Proceed normally
+        return relevant_docs
+\`\`\`
+
+### 5. Fusion RAG (Reciprocal Rank Fusion)
+
+Combine results from multiple retrieval methods:
+
+\`\`\`python
+def reciprocal_rank_fusion(rankings: list[list], k: int = 60):
+    """
+    Combine multiple ranked lists using RRF.
+
+    Score = Σ 1/(k + rank)
+    """
+    scores = {}
+
+    for ranking in rankings:
+        for rank, doc_id in enumerate(ranking):
+            if doc_id not in scores:
+                scores[doc_id] = 0
+            scores[doc_id] += 1 / (k + rank + 1)
+
+    # Sort by combined score
+    fused = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    return [doc_id for doc_id, score in fused]
+
+# Usage:
+semantic_results = semantic_search(query)    # Vector similarity
+keyword_results = keyword_search(query)      # BM25/TF-IDF
+entity_results = entity_search(query)        # Named entity matching
+
+fused_ranking = reciprocal_rank_fusion([
+    semantic_results,
+    keyword_results,
+    entity_results
+])
+\`\`\`
+
+### 6. Parent Document Retrieval
+
+Retrieve small chunks, but return larger context:
+
+\`\`\`python
+# Index small chunks (better retrieval precision)
+small_chunks = split_into_chunks(document, size=200)
+
+# Store parent-child mapping
+chunk_to_parent = {}
+for i, chunk in enumerate(small_chunks):
+    parent_idx = i // 5  # 5 small chunks per parent
+    chunk_to_parent[chunk.id] = parent_idx
+
+# At retrieval time:
+matched_chunk = vector_search(query)
+parent_chunk = get_parent(matched_chunk)  # Return larger context
+\`\`\`
+
+### Choosing the Right Technique
+
+| Technique | When to Use |
+|-----------|------------|
+| HyDE | Short, ambiguous queries |
+| Query Rewriting | Complex multi-part questions |
+| Reranking | Need high precision from large corpus |
+| Corrective RAG | Unreliable document quality |
+| Fusion RAG | Multiple data sources/types |
+| Parent Retrieval | Need surrounding context |
+          `
+        },
+        {
+          id: "rag-evaluation",
+          title: "Evaluating RAG Systems",
+          content: `
+### RAG Evaluation Framework
+
+RAG systems need evaluation at multiple stages:
+
+\`\`\`
+┌─────────────────────────────────────────────────────────────────┐
+│                    RAG EVALUATION METRICS                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   RETRIEVAL METRICS              GENERATION METRICS             │
+│   ─────────────────              ─────────────────              │
+│   • Precision@K                  • Faithfulness                 │
+│   • Recall@K                     • Answer Relevance             │
+│   • MRR (Mean Reciprocal Rank)   • Completeness                 │
+│   • NDCG                         • Hallucination Rate           │
+│                                                                 │
+│   END-TO-END METRICS                                            │
+│   ─────────────────                                             │
+│   • Answer Correctness                                          │
+│   • Context Utilization                                         │
+│   • Latency                                                     │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+\`\`\`
+
+### LLM-as-a-Judge Evaluation
+
+Use an LLM to evaluate RAG outputs:
+
+\`\`\`python
+def evaluate_with_llm_judge(question: str, answer: str, context: str, llm):
+    """
+    Use LLM to evaluate RAG response quality.
+    """
+
+    # Faithfulness: Is answer grounded in context?
+    faithfulness_prompt = f"""
+    Given the context and answer, rate if the answer is faithful to the context.
+
+    Context: {context}
+    Answer: {answer}
+
+    Rate from 1-5:
+    1 = Contains information not in context (hallucination)
+    5 = Completely grounded in context
+
+    Rating:"""
+
+    faithfulness = llm.generate(faithfulness_prompt)
+
+    # Relevance: Does answer address the question?
+    relevance_prompt = f"""
+    Does this answer address the question?
+
+    Question: {question}
+    Answer: {answer}
+
+    Rate from 1-5:
+    1 = Completely irrelevant
+    5 = Directly and fully answers the question
+
+    Rating:"""
+
+    relevance = llm.generate(relevance_prompt)
+
+    return {
+        "faithfulness": int(faithfulness.strip()),
+        "relevance": int(relevance.strip())
+    }
+\`\`\`
+
+### RAGAS Evaluation Framework
+
+Popular open-source RAG evaluation:
+
+\`\`\`python
+# pip install ragas
+
+from ragas import evaluate
+from ragas.metrics import (
+    faithfulness,
+    answer_relevancy,
+    context_precision,
+    context_recall,
+)
+
+# Prepare evaluation dataset
+eval_dataset = {
+    "question": ["What is RAG?"],
+    "answer": ["RAG is..."],
+    "contexts": [["Context 1...", "Context 2..."]],
+    "ground_truth": ["RAG (Retrieval-Augmented Generation)..."]
+}
+
+# Run evaluation
+results = evaluate(
+    dataset=eval_dataset,
+    metrics=[
+        faithfulness,
+        answer_relevancy,
+        context_precision,
+        context_recall,
+    ]
+)
+
+print(results)
+# {'faithfulness': 0.85, 'answer_relevancy': 0.92, ...}
+\`\`\`
+
+### Key Metrics Explained
+
+| Metric | What it Measures | Target |
+|--------|-----------------|--------|
+| **Faithfulness** | Is answer grounded in retrieved context? | > 0.9 |
+| **Answer Relevance** | Does answer address the question? | > 0.8 |
+| **Context Precision** | Are retrieved docs relevant? | > 0.7 |
+| **Context Recall** | Did we retrieve all needed info? | > 0.8 |
+
+### Building an Evaluation Set
+
+\`\`\`python
+# Create golden test set with expected answers
+eval_set = [
+    {
+        "question": "What is our return policy?",
+        "expected_answer": "30-day returns with receipt",
+        "relevant_docs": ["policy_v2.pdf"]
+    },
+    {
+        "question": "How do I reset my password?",
+        "expected_answer": "Click forgot password on login",
+        "relevant_docs": ["faq.md", "user_guide.pdf"]
+    }
+]
+
+# Run automated evaluation
+for test in eval_set:
+    result = rag_system.query(test["question"])
+    score = evaluate_answer(result, test["expected_answer"])
+    print(f"Q: {test['question']} → Score: {score}")
+\`\`\`
+          `
         }
       ]
     },
