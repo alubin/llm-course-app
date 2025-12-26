@@ -8,6 +8,7 @@ import {
   Clock, Target, BookOpen, ArrowLeft,
   Copy, Check
 } from 'lucide-react';
+import { day0Content } from '../data/day0Content';
 import { day1Content } from '../data/day1Content';
 import { day2Content } from '../data/day2Content';
 import { day3Content } from '../data/day3Content';
@@ -48,6 +49,7 @@ export default function CoursePage(): React.ReactElement {
 
   // Map dayId to content
   const contentMap: Record<string, DayContent> = {
+    '0': day0Content,
     '1': day1Content,
     '2': day2Content,
     '3': day3Content,

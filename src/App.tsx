@@ -38,6 +38,7 @@ function App(): React.ReactElement {
     { path: '/', icon: Home, label: 'Dashboard' },
     { path: '/roadmap', icon: Map, label: 'Course Roadmap' },
     { path: '/python-primer', icon: Code, label: 'Python Primer' },
+    { path: '/day/0', icon: BookOpen, label: 'Day 0: Why Python?' },
     { path: '/day/1', icon: Terminal, label: 'Day 1: CLI Assistant' },
     { path: '/day/2', icon: MessageSquare, label: 'Day 2: Memory Chatbot' },
     { path: '/day/3', icon: FileSearch, label: 'Day 3: RAG System' },

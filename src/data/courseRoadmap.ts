@@ -7,6 +7,17 @@ export interface PythonPrimerTopic {
 
 export const courseRoadmap: CourseDay[] = [
   {
+    id: 0,
+    title: "Why Python for AI?",
+    description: "Understand why Python dominates AI development and how it leverages C/C++ for performance",
+    duration: "30-45 minutes",
+    language: "Python",
+    status: "available",
+    topics: ["Python vs C++", "Two-Language Problem", "NumPy & PyTorch Internals", "The AI Stack", "Performance Reality"],
+    project: "Hands-on benchmarks",
+    icon: "BookOpen"
+  },
+  {
     id: 1,
     title: "LLM Fundamentals + CLI Assistant",
     description: "Learn how LLMs work and build your first AI-powered CLI tool",
