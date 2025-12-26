@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-surface-950 text-surface-100 font-body antialiased;
+  }
+
+  ::selection {
+    @apply bg-brand-500/30;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-surface-900;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-surface-700 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-surface-600;
+  }
+}
+
+@layer components {
+  .prose-custom {
+    @apply text-surface-200 leading-relaxed;
+  }
+
+  .prose-custom h1 {
+    @apply text-3xl font-display font-bold text-white mb-6 mt-10;
+  }
+
+  .prose-custom h2 {
+    @apply text-2xl font-display font-semibold text-white mb-4 mt-8 pb-2 border-b border-surface-800;
+  }
+
+  .prose-custom h3 {
+    @apply text-xl font-display font-semibold text-white mb-3 mt-6;
+  }
+
+  .prose-custom h4 {
+    @apply text-lg font-display font-medium text-surface-100 mb-2 mt-4;
+  }
+
+  .prose-custom p {
+    @apply mb-4 text-surface-300;
+  }
+
+  .prose-custom ul {
+    @apply mb-4 ml-6 space-y-2;
+  }
+
+  .prose-custom li {
+    @apply text-surface-300 relative pl-2;
+  }
+
+  .prose-custom li::before {
+    content: "•";
+    @apply absolute -left-4 text-brand-500;
+  }
+
+  .prose-custom code:not(pre code) {
+    @apply bg-surface-800 text-brand-400 px-1.5 py-0.5 rounded text-sm font-mono;
+  }
+
+  .prose-custom pre {
+    @apply bg-surface-900 rounded-lg p-4 overflow-x-auto mb-4 border border-surface-800;
+  }
+
+  .prose-custom a {
+    @apply text-brand-400 hover:text-brand-300 underline underline-offset-2;
+  }
+
+  .prose-custom blockquote {
+    @apply border-l-4 border-brand-500 pl-4 italic text-surface-400 my-4;
+  }
+
+  .prose-custom table {
+    @apply w-full mb-4 border-collapse;
+  }
+
+  .prose-custom th {
+    @apply bg-surface-800 text-left p-3 font-semibold text-white border border-surface-700;
+  }
+
+  .prose-custom td {
+    @apply p-3 border border-surface-800 text-surface-300;
+  }
+
+  .prose-custom hr {
+    @apply border-surface-800 my-8;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-400 to-emerald-400;
+  }
+
+  .glow {
+    box-shadow: 0 0 40px rgba(34, 197, 94, 0.15);
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:translate-y-[-2px] hover:shadow-lg hover:shadow-brand-500/10;
+  }
+}
