@@ -159,7 +159,7 @@ class PythonTutorService {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     try {
       const chat = model.startChat({
@@ -205,7 +205,7 @@ class PythonTutorService {
 
       return {
         provider: 'gemini',
-        model: 'gemini-2.0-flash-exp',
+        model: 'gemini-1.5-flash',
         ...parsed,
         tokens,
         timestamp: new Date().toISOString()
