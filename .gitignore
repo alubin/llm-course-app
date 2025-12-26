@@ -20,8 +20,11 @@ build/
 # API Keys (extra safety)
 **/api-keys.json
 **/credentials.json
-**/*secret*
-**/*apikey*
+**/*secret*.json
+**/*secret*.txt
+**/apikey.json
+**/apikeys.json
+**/api_keys.json
 
 # TypeScript
 *.tsbuildinfo
