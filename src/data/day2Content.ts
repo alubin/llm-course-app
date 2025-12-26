@@ -1,4 +1,6 @@
-export const day2Content = {
+import type { DayContent } from './types';
+
+export const day2Content: DayContent = {
   id: 2,
   title: "Chatbot with Memory & Context",
   subtitle: "Build a stateful chatbot with conversation persistence",

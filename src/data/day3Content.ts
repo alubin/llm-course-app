@@ -1,4 +1,6 @@
-export const day3Content = {
+import type { DayContent } from './types';
+
+export const day3Content: DayContent = {
   id: 3,
   title: "RAG - Chat with Your Documents",
   subtitle: "Build a Retrieval-Augmented Generation system",

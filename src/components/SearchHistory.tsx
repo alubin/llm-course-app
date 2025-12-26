@@ -2,8 +2,23 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Clock, Trash2 } from 'lucide-react';
 import ProviderBadge from './ProviderBadge';
+import { HistoryEntry } from '../hooks/SearchHistoryContext';
 
-export default function SearchHistory({ isOpen, onClose, history, onSelectQuery, onClearHistory }) {
+interface SearchHistoryProps {
+  isOpen: boolean;
+  onClose: () => void;
+  history: HistoryEntry[];
+  onSelectQuery: (entry: HistoryEntry) => void;
+  onClearHistory: () => void;
+}
+
+export default function SearchHistory({
+  isOpen,
+  onClose,
+  history,
+  onSelectQuery,
+  onClearHistory
+}: SearchHistoryProps): React.ReactElement | null {
   if (!isOpen) return null;
 
   return (

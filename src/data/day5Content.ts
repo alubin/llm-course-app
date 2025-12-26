@@ -1,4 +1,6 @@
-export const day5Content = {
+import type { DayContent } from './types';
+
+export const day5Content: DayContent = {
   id: 5,
   title: "Transformers & Fine-tuning LLMs",
   subtitle: "Deep dive into transformer architecture and model customization",

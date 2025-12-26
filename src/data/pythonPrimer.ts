@@ -1,4 +1,6 @@
-export const pythonPrimerContent = {
+import type { PythonPrimerContent } from './types';
+
+export const pythonPrimerContent: PythonPrimerContent = {
   title: "Python Primer for LLM Engineering",
   subtitle: "Understand every line of code before you write it",
   duration: "1-2 hours",

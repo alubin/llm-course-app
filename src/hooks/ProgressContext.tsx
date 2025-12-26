@@ -1,11 +1,15 @@
 import React, { createContext, useContext } from 'react';
-import { useProgress } from './useProgress';
+import { useProgress, UseProgressReturn } from './useProgress';
 
-const ProgressContext = createContext(null);
+const ProgressContext = createContext<UseProgressReturn | null>(null);
 
-export function ProgressProvider({ children }) {
+export interface ProgressProviderProps {
+  children: React.ReactNode;
+}
+
+export function ProgressProvider({ children }: ProgressProviderProps): React.ReactElement {
   const progress = useProgress();
-  
+
   return (
     <ProgressContext.Provider value={progress}>
       {children}
@@ -13,7 +17,7 @@ export function ProgressProvider({ children }) {
   );
 }
 
-export function useProgressContext() {
+export function useProgressContext(): UseProgressReturn {
   const context = useContext(ProgressContext);
   if (!context) {
     throw new Error('useProgressContext must be used within a ProgressProvider');

@@ -1,15 +1,16 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  Terminal, MessageSquare, FileSearch, Server, 
+import {
+  Terminal, MessageSquare, FileSearch, Server,
   Brain, Bot, Workflow, Clock, Lock, ArrowRight,
-  CheckCircle2
+  CheckCircle2, LucideIcon
 } from 'lucide-react';
 import { courseRoadmap } from '../data/courseRoadmap';
 import { useProgressContext } from '../hooks/ProgressContext';
+import { CourseDay } from '../data/types';
 
-const iconMap = {
+const iconMap: Record<string, LucideIcon> = {
   Terminal,
   MessageSquare,
   FileSearch,
@@ -19,7 +20,12 @@ const iconMap = {
   Workflow,
 };
 
-export default function Roadmap() {
+interface DayContentProps {
+  day: CourseDay;
+  isAvailable: boolean;
+}
+
+export default function Roadmap(): React.ReactElement {
   const { isDayComplete } = useProgressContext();
 
   return (
@@ -33,7 +39,7 @@ export default function Roadmap() {
           Course Roadmap
         </h1>
         <p className="text-surface-400 max-w-2xl">
-          Your 7-day journey to mastering LLM engineering. Each day focuses on 
+          Your 7-day journey to mastering LLM engineering. Each day focuses on
           building a real, portfolio-ready project.
         </p>
       </motion.div>
@@ -48,7 +54,7 @@ export default function Roadmap() {
             const Icon = iconMap[day.icon] || Terminal;
             const isAvailable = day.status === 'available';
             const isComplete = isDayComplete(day.id);
-            
+
             return (
               <motion.div
                 key={day.id}
@@ -58,13 +64,13 @@ export default function Roadmap() {
                 className={`relative pl-16 ${!isAvailable ? 'opacity-60' : ''}`}
               >
                 {/* Circle indicator */}
-                <div 
+                <div
                   className={`
                     absolute left-0 w-12 h-12 rounded-full flex items-center justify-center
-                    ${isComplete 
-                      ? 'bg-brand-500 text-white' 
-                      : isAvailable 
-                        ? 'bg-surface-800 text-brand-400 border-2 border-brand-500' 
+                    ${isComplete
+                      ? 'bg-brand-500 text-white'
+                      : isAvailable
+                        ? 'bg-surface-800 text-brand-400 border-2 border-brand-500'
                         : 'bg-surface-800 text-surface-500 border border-surface-700'
                     }
                   `}
@@ -77,11 +83,11 @@ export default function Roadmap() {
                 </div>
 
                 {/* Card */}
-                <div 
+                <div
                   className={`
                     bg-surface-900 border rounded-xl p-6 transition-all
-                    ${isAvailable 
-                      ? 'border-surface-800 hover:border-brand-500/50 cursor-pointer' 
+                    ${isAvailable
+                      ? 'border-surface-800 hover:border-brand-500/50 cursor-pointer'
                       : 'border-surface-800/50'
                     }
                   `}
@@ -124,7 +130,7 @@ export default function Roadmap() {
   );
 }
 
-function DayContent({ day, isAvailable }) {
+function DayContent({ day, isAvailable }: DayContentProps): React.ReactElement {
   return (
     <>
       <div className="flex items-start justify-between mb-4">
@@ -132,8 +138,8 @@ function DayContent({ day, isAvailable }) {
           <div className="flex items-center gap-2 mb-2">
             <span className={`
               px-2 py-1 text-xs font-medium rounded
-              ${isAvailable 
-                ? 'bg-brand-500/20 text-brand-400' 
+              ${isAvailable
+                ? 'bg-brand-500/20 text-brand-400'
                 : 'bg-surface-800 text-surface-500'
               }
             `}>
@@ -149,31 +155,31 @@ function DayContent({ day, isAvailable }) {
               </span>
             )}
           </div>
-          
+
           <h3 className={`
             text-xl font-display font-semibold mb-2
             ${isAvailable ? 'text-white' : 'text-surface-400'}
           `}>
             {day.title}
           </h3>
-          
+
           <p className="text-surface-400 mb-4">
             {day.description}
           </p>
         </div>
-        
+
         {isAvailable && (
-          <ArrowRight 
-            size={20} 
-            className="text-surface-600 group-hover:text-brand-400 flex-shrink-0" 
+          <ArrowRight
+            size={20}
+            className="text-surface-600 group-hover:text-brand-400 flex-shrink-0"
           />
         )}
       </div>
 
       {/* Topics */}
       <div className="flex flex-wrap gap-2 mb-4">
-        {day.topics.slice(0, 4).map(topic => (
-          <span 
+        {day.topics.slice(0, 4).map((topic: string) => (
+          <span
             key={topic}
             className="px-2 py-1 text-xs bg-surface-800 text-surface-400 rounded"
           >

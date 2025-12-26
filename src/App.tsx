@@ -1,9 +1,10 @@
 import React from 'react';
 import { Routes, Route, NavLink, useLocation } from 'react-router-dom';
-import { 
-  BookOpen, Home, Code, Map, ChevronRight, 
-  Terminal, MessageSquare, FileSearch, Server, 
-  Brain, Bot, Workflow, Menu, X, Github
+import {
+  BookOpen, Home, Code, Map,
+  Terminal, MessageSquare, FileSearch, Server,
+  Brain, Bot, Workflow, Menu, X,
+  LucideIcon
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,18 +19,14 @@ import PythonPrimer from './components/PythonPrimer';
 import { ProgressProvider } from './hooks/ProgressContext';
 import { SearchHistoryProvider } from './hooks/SearchHistoryContext';
 
-const iconMap = {
-  Terminal,
-  MessageSquare,
-  FileSearch,
-  Server,
-  Brain,
-  Bot,
-  Workflow,
-};
+interface NavItem {
+  path: string;
+  icon: LucideIcon;
+  label: string;
+}
 
-function App() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+function App(): React.ReactElement {
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const location = useLocation();
 
   // Close sidebar on route change (mobile)
@@ -37,7 +34,7 @@ function App() {
     setSidebarOpen(false);
   }, [location]);
 
-  const navItems = [
+  const navItems: NavItem[] = [
     { path: '/', icon: Home, label: 'Dashboard' },
     { path: '/roadmap', icon: Map, label: 'Course Roadmap' },
     { path: '/python-primer', icon: Code, label: 'Python Primer' },
@@ -49,6 +46,7 @@ function App() {
     { path: '/day/6', icon: Bot, label: 'Day 6: AI Agents' },
     { path: '/day/7', icon: Workflow, label: 'Day 7: Data Pipeline' },
   ];
+
 
   return (
     <ProgressProvider>
@@ -115,39 +113,8 @@ function App() {
               </NavLink>
             ))}
 
-            {/* Coming Soon Section */}
-            <div className="pt-4 mt-4 border-t border-surface-800">
-              <p className="px-4 py-2 text-xs font-medium text-surface-500 uppercase tracking-wider">
-                Coming Soon
-              </p>
-              {[
-                { label: 'Day 2: Chatbot Memory', icon: MessageSquare },
-                { label: 'Day 3: RAG Documents', icon: FileSearch },
-                { label: 'Day 4: Spring Boot AI', icon: Server },
-              ].map(({ label, icon: Icon }) => (
-                <div
-                  key={label}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-surface-600 cursor-not-allowed"
-                >
-                  <Icon size={18} />
-                  <span className="font-medium">{label}</span>
-                </div>
-              ))}
-            </div>
           </nav>
 
-          {/* Footer */}
-          <div className="p-4 border-t border-surface-800">
-            <a
-              href="https://github.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-surface-400 hover:text-white hover:bg-surface-800 transition-colors"
-            >
-              <Github size={18} />
-              <span className="font-medium">View on GitHub</span>
-            </a>
-          </div>
         </aside>
 
         {/* Main Content */}

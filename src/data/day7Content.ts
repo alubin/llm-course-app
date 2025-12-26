@@ -1,4 +1,6 @@
-export const day7Content = {
+import type { DayContent } from './types';
+
+export const day7Content: DayContent = {
   id: 7,
   title: "Data Pipeline with AI Enrichment",
   subtitle: "Build production data pipelines with AI classification and transformation",

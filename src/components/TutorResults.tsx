@@ -4,18 +4,25 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Copy, Check, ThumbsUp, ThumbsDown, Lightbulb, AlertCircle, Sparkles } from 'lucide-react';
 import ProviderBadge from './ProviderBadge';
+import { TutorResponse } from '../services/pythonTutor';
 
-export default function TutorResults({ question, response, onFeedback }) {
-  const [copied, setCopied] = useState(false);
-  const [feedback, setFeedback] = useState(null); // true = helpful, false = not helpful
+interface TutorResultsProps {
+  question: string;
+  response: TutorResponse;
+  onFeedback?: (helpful: boolean) => void;
+}
 
-  const handleCopy = (text) => {
+export default function TutorResults({ question, response, onFeedback }: TutorResultsProps): React.ReactElement | null {
+  const [copied, setCopied] = useState<boolean>(false);
+  const [feedback, setFeedback] = useState<boolean | null>(null); // true = helpful, false = not helpful
+
+  const handleCopy = (text: string): void => {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleFeedback = (helpful) => {
+  const handleFeedback = (helpful: boolean): void => {
     setFeedback(helpful);
     onFeedback?.(helpful);
   };
@@ -60,7 +67,7 @@ export default function TutorResults({ question, response, onFeedback }) {
             <div className="flex items-center justify-between px-6 py-3 bg-surface-800/50">
               <span className="text-sm text-surface-400 font-medium">Code Example</span>
               <button
-                onClick={() => handleCopy(response.code)}
+                onClick={() => handleCopy(response.code!)}
                 className="flex items-center gap-2 px-3 py-1.5 text-sm bg-surface-700 hover:bg-surface-600 text-surface-300 hover:text-white rounded-md transition-colors"
               >
                 {copied ? (

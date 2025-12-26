@@ -14,32 +14,51 @@ import ApiKeyModal from './ApiKeyModal';
 import TutorResults from './TutorResults';
 import SearchHistory from './SearchHistory';
 import ProviderBadge from './ProviderBadge';
+import { TutorResponse } from '../services/pythonTutor';
+import { HistoryEntry } from '../hooks/SearchHistoryContext';
+import { PythonSection } from '../data/types';
 
-export default function PythonPrimer() {
-  const [expandedSections, setExpandedSections] = useState({ basics: true });
-  const [searchQuery, setSearchQuery] = useState('');
-  const [copiedCode, setCopiedCode] = useState(null);
+interface SectionCardProps {
+  section: PythonSection;
+  index: number;
+  expanded: boolean;
+  onToggle: () => void;
+  copiedCode: string | null;
+  onCopyCode: (code: string, index: string) => Promise<void>;
+}
+
+interface PrimerContentProps {
+  content: string;
+  copiedCode: string | null;
+  onCopyCode: (code: string, index: string) => Promise<void>;
+}
+
+export default function PythonPrimer(): React.ReactElement {
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({ basics: true });
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   // AI Tutor state
-  const [isAIMode, setIsAIMode] = useState(false);
-  const [aiQuestion, setAiQuestion] = useState('');
-  const [aiResponse, setAiResponse] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
+  const [isAIMode, setIsAIMode] = useState<boolean>(false);
+  const [aiQuestion, setAiQuestion] = useState<string>('');
+  const [aiResponse, setAiResponse] = useState<TutorResponse | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showApiKeyModal, setShowApiKeyModal] = useState<boolean>(false);
+  const [showHistory, setShowHistory] = useState<boolean>(false);
 
   const apiKeyHook = useApiKey();
   const { addToHistory, updateFeedback, history, clearHistory } = useSearchHistory();
 
-  // Auto-show API key modal if no provider is configured
+  // Auto-show API key modal if no provider is configured (only once when switching to AI mode)
   useEffect(() => {
     if (isAIMode && !apiKeyHook.hasAnyProvider()) {
       setShowApiKeyModal(true);
     }
-  }, [isAIMode, apiKeyHook]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAIMode]);
 
-  const handleAISearch = async (e) => {
+  const handleAISearch = async (e?: React.FormEvent): Promise<void> => {
     e?.preventDefault();
     if (!aiQuestion.trim()) return;
 
@@ -55,27 +74,30 @@ export default function PythonPrimer() {
 
     try {
       const provider = apiKeyHook.getActiveProvider();
+      if (!provider) {
+        throw new Error('No active provider selected');
+      }
       const apiKey = apiKeyHook.getApiKey(provider);
       const response = await pythonTutor.ask(aiQuestion, provider, apiKey);
 
       setAiResponse(response);
-      const historyId = addToHistory(aiQuestion, response);
+      addToHistory(aiQuestion, response);
       setError(null);
     } catch (err) {
       console.error('AI search error:', err);
-      setError(err.message || 'Failed to get AI response. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to get AI response. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSelectHistoryQuery = (entry) => {
+  const handleSelectHistoryQuery = (entry: HistoryEntry): void => {
     setAiQuestion(entry.question);
     setAiResponse(entry.response);
     setIsAIMode(true);
   };
 
-  const handleFeedback = (helpful) => {
+  const handleFeedback = (helpful: boolean): void => {
     if (aiResponse) {
       // Find the history entry with this response
       const entry = history.find(h => h.response.timestamp === aiResponse.timestamp);
@@ -85,14 +107,14 @@ export default function PythonPrimer() {
     }
   };
 
-  const toggleSection = (sectionId) => {
+  const toggleSection = (sectionId: string): void => {
     setExpandedSections(prev => ({
       ...prev,
       [sectionId]: !prev[sectionId]
     }));
   };
 
-  const copyCode = async (code, index) => {
+  const copyCode = async (code: string, index: string): Promise<void> => {
     await navigator.clipboard.writeText(code);
     setCopiedCode(index);
     setTimeout(() => setCopiedCode(null), 2000);
@@ -112,17 +134,17 @@ export default function PythonPrimer() {
         className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-900/20 to-surface-900 border border-surface-800 p-8"
       >
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl" />
-        
+
         <div className="relative">
           <div className="flex items-center gap-2 text-blue-400 mb-4">
             <Code size={16} />
             <span className="text-sm font-medium">Reference Guide</span>
           </div>
-          
+
           <h1 className="text-3xl font-display font-bold text-white mb-2">
             {pythonPrimerContent.title}
           </h1>
-          
+
           <p className="text-surface-300 max-w-2xl mb-4">
             {pythonPrimerContent.subtitle}
           </p>
@@ -219,7 +241,7 @@ export default function PythonPrimer() {
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
                 {apiKeyHook.hasAnyProvider() && (
-                  <ProviderBadge provider={apiKeyHook.getActiveProvider()} size="sm" />
+                  <ProviderBadge provider={apiKeyHook.getActiveProvider()!} size="sm" />
                 )}
                 <button
                   type="submit"
@@ -330,7 +352,7 @@ export default function PythonPrimer() {
   );
 }
 
-function SectionCard({ section, index, expanded, onToggle, copiedCode, onCopyCode }) {
+function SectionCard({ section, index, expanded, onToggle, copiedCode, onCopyCode }: SectionCardProps): React.ReactElement {
   return (
     <motion.div
       id={section.id}
@@ -366,8 +388,8 @@ function SectionCard({ section, index, expanded, onToggle, copiedCode, onCopyCod
             className="border-t border-surface-800"
           >
             <div className="p-6">
-              <PrimerContent 
-                content={section.content} 
+              <PrimerContent
+                content={section.content}
                 copiedCode={copiedCode}
                 onCopyCode={onCopyCode}
               />
@@ -379,10 +401,10 @@ function SectionCard({ section, index, expanded, onToggle, copiedCode, onCopyCod
   );
 }
 
-function PrimerContent({ content, copiedCode, onCopyCode }) {
-  const parseContent = (text) => {
+function PrimerContent({ content, copiedCode, onCopyCode }: PrimerContentProps): React.ReactElement {
+  const parseContent = (text: string): React.ReactElement[] => {
     const lines = text.trim().split('\n');
-    const elements = [];
+    const elements: React.ReactElement[] = [];
     let i = 0;
     let codeBlockIndex = 0;
 
@@ -392,17 +414,17 @@ function PrimerContent({ content, copiedCode, onCopyCode }) {
       // Code block
       if (line.startsWith('```')) {
         const language = line.slice(3).trim() || 'python';
-        const codeLines = [];
+        const codeLines: string[] = [];
         i++;
-        
+
         while (i < lines.length && !lines[i].startsWith('```')) {
           codeLines.push(lines[i]);
           i++;
         }
-        
+
         const code = codeLines.join('\n');
         const blockIndex = codeBlockIndex++;
-        
+
         elements.push(
           <div key={`code-${blockIndex}`} className="relative group my-4">
             <div className="absolute top-2 right-2 flex items-center gap-2">
@@ -488,9 +510,9 @@ function PrimerContent({ content, copiedCode, onCopyCode }) {
     return elements;
   };
 
-  const parseInlineFormatting = (text) => {
+  const parseInlineFormatting = (text: string): React.ReactNode => {
     const parts = text.split(/(`[^`]+`)/g);
-    
+
     return parts.map((part, i) => {
       if (part.startsWith('`') && part.endsWith('`')) {
         return (
@@ -499,7 +521,7 @@ function PrimerContent({ content, copiedCode, onCopyCode }) {
           </code>
         );
       }
-      
+
       const boldParts = part.split(/(\*\*[^*]+\*\*)/g);
       return boldParts.map((bp, j) => {
         if (bp.startsWith('**') && bp.endsWith('**')) {

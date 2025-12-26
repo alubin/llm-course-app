@@ -1,4 +1,6 @@
-export const day4Content = {
+import type { DayContent } from './types';
+
+export const day4Content: DayContent = {
   id: 4,
   title: "AI-Powered REST API with Java Spring Boot",
   subtitle: "Build enterprise-grade AI APIs with Spring AI",

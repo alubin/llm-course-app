@@ -1,10 +1,12 @@
-export const day1Content = {
+import type { DayContent } from './types';
+
+export const day1Content: DayContent = {
   id: 1,
   title: "LLM Fundamentals + Building Your First AI CLI Assistant",
   subtitle: "Learn how Large Language Models work and build a production-ready CLI tool",
   duration: "4-8 hours",
   difficulty: "Beginner to Intermediate",
-  
+
   objectives: [
     "Explain how Large Language Models work at a conceptual level",
     "Understand tokens, context windows, and temperature parameters",
@@ -87,12 +89,12 @@ LLMs learn through a process called **self-supervised learning**:
 4. **RLHF:** Reinforcement Learning from Human Feedback makes responses more helpful
 
 > **Key Insight:** LLMs don't "understand" text the way humans do. They predict the most likely next word (token) based on patterns learned during training. This statistical approach, at scale, produces remarkably intelligent-seeming behavior.
-          \`
+          `
         },
         {
           id: "tokens",
           title: "Tokens — The Building Blocks",
-          content: \`
+          content: `
 ### What Are Tokens?
 
 Tokens are the fundamental units that LLMs process. A token can be:
@@ -155,12 +157,12 @@ def count_tokens(text: str, model: str = "gpt-4") -> int:
 text = "Hello, I'm learning about Large Language Models!"
 print(f"Token count: {count_tokens(text)}")  # Output: ~11 tokens
 \`\`\`
-          \`
+          `
         },
         {
           id: "parameters",
           title: "Key Parameters",
-          content: \`
+          content: `
 When calling an LLM API, you can control the output using several parameters:
 
 ### Temperature 🌡️
@@ -200,7 +202,7 @@ Limits the length of the response. Useful for:
 Sets the behavior and personality of the assistant:
 
 \`\`\`python
-system_prompt = """You are a helpful coding assistant. 
+system_prompt = """You are a helpful coding assistant.
 You write clean, well-commented code.
 You explain your solutions step by step.
 You prefer Python but can work with any language."""
@@ -213,12 +215,12 @@ An alternative to temperature. Controls diversity by limiting the token pool:
 - \`top_p=0.9\`: Considers tokens in the top 90% probability
 
 > **Recommendation:** For most applications, adjust **temperature** and leave **top_p** at default. Adjusting both can lead to unpredictable results.
-          \`
+          `
         },
         {
           id: "api-architecture",
           title: "API Architecture",
-          content: \`
+          content: `
 ### Request/Response Pattern
 
 \`\`\`
@@ -266,12 +268,12 @@ messages = [
     {"role": "user", "content": "What can I build with it?"}  # New message
 ]
 \`\`\`
-          \`
+          `
         },
         {
           id: "streaming",
           title: "Streaming vs. Non-Streaming",
-          content: \`
+          content: `
 ### Non-Streaming (Standard)
 
 \`\`\`
@@ -282,7 +284,7 @@ User sends request ────────────────────�
 User receives complete response ◄────────────────┘
 \`\`\`
 
-**Pros:** Simple to implement  
+**Pros:** Simple to implement
 **Cons:** User waits with no feedback
 
 ### Streaming
@@ -296,7 +298,7 @@ User sees "The answer is" ◄─────────────────
 User sees "The answer is Python" ◄───────────────┘
 \`\`\`
 
-**Pros:** Immediate feedback, better UX  
+**Pros:** Immediate feedback, better UX
 **Cons:** Slightly more complex to implement
 
 ### Code Comparison
@@ -319,7 +321,7 @@ for chunk in stream:
     if chunk.choices[0].delta.content:
         print(chunk.choices[0].delta.content, end="", flush=True)
 \`\`\`
-          \`
+          `
         }
       ]
     },
@@ -332,7 +334,7 @@ for chunk in stream:
           id: "task-1",
           title: "Project Setup",
           description: "Create the project structure and install dependencies",
-          content: \`
+          content: `
 ### 1.1 Create Project Structure
 
 \`\`\`bash
@@ -484,13 +486,13 @@ pip install -e ".[dev]"
 cp .env.example .env
 # Now edit .env and add your API keys
 \`\`\`
-          \`
+          `
         },
         {
           id: "task-2",
           title: "Configuration Module",
           description: "Create the configuration management system",
-          content: \`
+          content: `
 ### Create src/sage/config.py
 
 \`\`\`python
@@ -516,20 +518,20 @@ load_dotenv()
 @dataclass
 class Config:
     """Application configuration."""
-    
+
     # API Keys
     openai_api_key: Optional[str] = None
     anthropic_api_key: Optional[str] = None
-    
+
     # Model settings
     default_model: str = "gpt-4"
     default_temperature: float = 0.7
     max_tokens: int = 2048
-    
+
     # Available models
     OPENAI_MODELS = ["gpt-4", "gpt-4-turbo", "gpt-3.5-turbo"]
     ANTHROPIC_MODELS = ["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"]
-    
+
     @classmethod
     def from_env(cls) -> "Config":
         """Load configuration from environment variables."""
@@ -540,7 +542,7 @@ class Config:
             default_temperature=float(os.getenv("DEFAULT_TEMPERATURE", "0.7")),
             max_tokens=int(os.getenv("MAX_TOKENS", "2048")),
         )
-    
+
     def get_provider(self, model: str) -> str:
         """Determine the provider for a given model."""
         if model in self.OPENAI_MODELS or model.startswith("gpt"):
@@ -549,12 +551,12 @@ class Config:
             return "anthropic"
         else:
             raise ValueError(f"Unknown model: {model}")
-    
+
     def validate(self, model: Optional[str] = None) -> None:
         """Validate that required API keys are present."""
         model = model or self.default_model
         provider = self.get_provider(model)
-        
+
         if provider == "openai" and not self.openai_api_key:
             raise ValueError(
                 "OpenAI API key not found. "
@@ -570,13 +572,13 @@ class Config:
 # Global configuration instance
 config = Config.from_env()
 \`\`\`
-          \`
+          `
         },
         {
           id: "task-3",
           title: "LLM Client Module",
           description: "Build the unified LLM client interface",
-          content: \`
+          content: `
 ### Create src/sage/llm.py
 
 \`\`\`python
@@ -602,7 +604,7 @@ Message = dict[str, str]
 
 class BaseLLMClient(ABC):
     """Abstract base class for LLM clients."""
-    
+
     @abstractmethod
     def chat(
         self,
@@ -612,7 +614,7 @@ class BaseLLMClient(ABC):
     ) -> str:
         """Send a chat request and return the response."""
         pass
-    
+
     @abstractmethod
     def chat_stream(
         self,
@@ -626,11 +628,11 @@ class BaseLLMClient(ABC):
 
 class OpenAIClient(BaseLLMClient):
     """OpenAI API client."""
-    
+
     def __init__(self, api_key: str, model: str = "gpt-4"):
         self.client = OpenAI(api_key=api_key)
         self.model = model
-    
+
     def chat(
         self,
         messages: List[Message],
@@ -645,7 +647,7 @@ class OpenAIClient(BaseLLMClient):
             max_tokens=max_tokens,
         )
         return response.choices[0].message.content
-    
+
     def chat_stream(
         self,
         messages: List[Message],
@@ -660,7 +662,7 @@ class OpenAIClient(BaseLLMClient):
             max_tokens=max_tokens,
             stream=True,
         )
-        
+
         for chunk in stream:
             if chunk.choices[0].delta.content:
                 yield chunk.choices[0].delta.content
@@ -668,24 +670,24 @@ class OpenAIClient(BaseLLMClient):
 
 class AnthropicClient(BaseLLMClient):
     """Anthropic API client."""
-    
+
     def __init__(self, api_key: str, model: str = "claude-3-sonnet-20240229"):
         self.client = Anthropic(api_key=api_key)
         self.model = model
-    
+
     def _convert_messages(self, messages: List[Message]) -> tuple[str, List[Message]]:
         """Convert messages to Anthropic format, extracting system prompt."""
         system_prompt = ""
         converted = []
-        
+
         for msg in messages:
             if msg["role"] == "system":
                 system_prompt = msg["content"]
             else:
                 converted.append(msg)
-        
+
         return system_prompt, converted
-    
+
     def chat(
         self,
         messages: List[Message],
@@ -694,16 +696,16 @@ class AnthropicClient(BaseLLMClient):
     ) -> str:
         """Send a chat request and return the response."""
         system_prompt, converted_messages = self._convert_messages(messages)
-        
+
         response = self.client.messages.create(
             model=self.model,
             max_tokens=max_tokens,
             system=system_prompt if system_prompt else None,
             messages=converted_messages,
         )
-        
+
         return response.content[0].text
-    
+
     def chat_stream(
         self,
         messages: List[Message],
@@ -712,7 +714,7 @@ class AnthropicClient(BaseLLMClient):
     ) -> Generator[str, None, None]:
         """Send a chat request and stream the response."""
         system_prompt, converted_messages = self._convert_messages(messages)
-        
+
         with self.client.messages.stream(
             model=self.model,
             max_tokens=max_tokens,
@@ -730,11 +732,11 @@ def get_client(
     """Factory function to get the appropriate LLM client."""
     cfg = config_instance or config
     model = model or cfg.default_model
-    
+
     cfg.validate(model)
-    
+
     provider = cfg.get_provider(model)
-    
+
     if provider == "openai":
         return OpenAIClient(api_key=cfg.openai_api_key, model=model)
     elif provider == "anthropic":
@@ -745,35 +747,35 @@ def get_client(
 
 class Conversation:
     """Manages conversation history."""
-    
+
     def __init__(self, system_prompt: Optional[str] = None):
         self.messages: List[Message] = []
         if system_prompt:
             self.messages.append({"role": "system", "content": system_prompt})
-    
+
     def add_user_message(self, content: str) -> None:
         self.messages.append({"role": "user", "content": content})
-    
+
     def add_assistant_message(self, content: str) -> None:
         self.messages.append({"role": "assistant", "content": content})
-    
+
     def get_messages(self) -> List[Message]:
         return self.messages.copy()
-    
+
     def clear(self) -> None:
         system_messages = [m for m in self.messages if m["role"] == "system"]
         self.messages = system_messages
-    
+
     def __len__(self) -> int:
         return len(self.messages)
 \`\`\`
-          \`
+          `
         },
         {
           id: "task-4",
           title: "Utility Functions",
           description: "Create helper functions for the CLI",
-          content: \`
+          content: `
 ### Create src/sage/utils.py
 
 \`\`\`python
@@ -801,20 +803,20 @@ def count_tokens(text: str, model: str = "gpt-4") -> int:
         encoding = tiktoken.encoding_for_model(model)
     except KeyError:
         encoding = tiktoken.get_encoding("cl100k_base")
-    
+
     return len(encoding.encode(text))
 
 
 def read_file(path: str) -> str:
     """Read and return the contents of a file."""
     file_path = Path(path)
-    
+
     if not file_path.exists():
         raise FileNotFoundError(f"File not found: {path}")
-    
+
     if file_path.stat().st_size > 100_000:
         raise ValueError(f"File too large: {path} (max 100KB)")
-    
+
     return file_path.read_text(encoding="utf-8")
 
 
@@ -853,11 +855,11 @@ def print_panel(content: str, title: str = "", style: str = "blue") -> None:
 def stream_print(text_generator, end: str = "") -> str:
     """Print streaming text and return the complete response."""
     full_response = ""
-    
+
     for chunk in text_generator:
         print(chunk, end="", flush=True)
         full_response += chunk
-    
+
     print(end, flush=True)
     return full_response
 
@@ -868,13 +870,13 @@ def get_stdin() -> Optional[str]:
         return sys.stdin.read()
     return None
 \`\`\`
-          \`
+          `
         },
         {
           id: "task-5",
           title: "CLI Commands",
           description: "Build the command-line interface with Click",
-          content: \`
+          content: `
 ### Create src/sage/cli.py
 
 This is the main CLI file. Due to its length, here are the key commands:
@@ -891,17 +893,17 @@ from rich.console import Console
 from sage.config import config
 from sage.llm import get_client, Conversation
 from sage.utils import (
-    console, print_markdown, print_error, 
+    console, print_markdown, print_error,
     print_success, print_panel, stream_print, get_stdin,
 )
 
 
 SYSTEM_PROMPTS = {
-    "default": """You are Sage, a helpful AI assistant in the terminal. 
+    "default": """You are Sage, a helpful AI assistant in the terminal.
 You provide clear, concise answers.""",
-    "code": """You are Sage, an expert programming assistant. 
+    "code": """You are Sage, an expert programming assistant.
 You write clean, efficient, well-commented code.""",
-    "concise": """You are Sage, a brief AI assistant. 
+    "concise": """You are Sage, a brief AI assistant.
 Give short, direct answers.""",
 }
 
@@ -921,16 +923,16 @@ def main():
 def ask(question: tuple, model: Optional[str], temperature: float, no_stream: bool):
     """Ask a single question and get a response."""
     question_text = " ".join(question)
-    
+
     try:
         client = get_client(model=model)
         messages = [
             {"role": "system", "content": SYSTEM_PROMPTS["default"]},
             {"role": "user", "content": question_text},
         ]
-        
+
         console.print()
-        
+
         if no_stream:
             with console.status("[bold blue]Thinking...[/bold blue]"):
                 response = client.chat(messages, temperature=temperature)
@@ -939,9 +941,9 @@ def ask(question: tuple, model: Optional[str], temperature: float, no_stream: bo
             response = stream_print(
                 client.chat_stream(messages, temperature=temperature)
             )
-        
+
         console.print()
-        
+
     except Exception as e:
         print_error(str(e))
         sys.exit(1)
@@ -950,7 +952,7 @@ def ask(question: tuple, model: Optional[str], temperature: float, no_stream: bo
 @main.command()
 @click.option("-m", "--model", default=None)
 @click.option("-t", "--temperature", default=0.7, type=float)
-@click.option("-s", "--system", default="default", 
+@click.option("-s", "--system", default="default",
               type=click.Choice(["default", "code", "concise"]))
 def chat(model: Optional[str], temperature: float, system: str):
     """Start an interactive chat session."""
@@ -959,22 +961,22 @@ def chat(model: Optional[str], temperature: float, system: str):
     except Exception as e:
         print_error(str(e))
         sys.exit(1)
-    
+
     conversation = Conversation(system_prompt=SYSTEM_PROMPTS[system])
-    
+
     print_panel(
         "Welcome to Sage Chat! Type /help for commands, /quit to exit.",
         title="🔮 Sage Chat",
         style="green"
     )
-    
+
     while True:
         try:
             user_input = console.input("[bold cyan]You:[/bold cyan] ").strip()
-            
+
             if not user_input:
                 continue
-            
+
             if user_input.startswith("/"):
                 command = user_input.lower()
                 if command in ("/quit", "/exit"):
@@ -987,20 +989,20 @@ def chat(model: Optional[str], temperature: float, system: str):
                 elif command == "/help":
                     console.print("Commands: /clear, /quit, /help")
                     continue
-            
+
             conversation.add_user_message(user_input)
             console.print("[bold green]Sage:[/bold green] ", end="")
-            
+
             response = stream_print(
                 client.chat_stream(
                     conversation.get_messages(),
                     temperature=temperature
                 )
             )
-            
+
             conversation.add_assistant_message(response)
             console.print()
-            
+
         except KeyboardInterrupt:
             console.print()
             print_success("Goodbye!")
@@ -1014,13 +1016,13 @@ def chat(model: Optional[str], temperature: float, system: str):
 if __name__ == "__main__":
     main()
 \`\`\`
-          \`
+          `
         },
         {
           id: "task-6",
           title: "Package Initialization",
           description: "Update the package __init__.py",
-          content: \`
+          content: `
 ### Update src/sage/__init__.py
 
 \`\`\`python
@@ -1036,13 +1038,13 @@ from sage.config import config
 
 __all__ = ["get_client", "Conversation", "config", "__version__"]
 \`\`\`
-          \`
+          `
         },
         {
           id: "task-7",
           title: "Write Tests",
           description: "Create unit tests for the LLM module",
-          content: \`
+          content: `
 ### Create tests/test_llm.py
 
 \`\`\`python
@@ -1057,31 +1059,31 @@ from sage.llm import OpenAIClient, Conversation, get_client
 
 class TestConversation:
     """Tests for the Conversation class."""
-    
+
     def test_init_empty(self):
         conv = Conversation()
         assert len(conv) == 0
-    
+
     def test_init_with_system_prompt(self):
         conv = Conversation(system_prompt="You are helpful.")
         assert len(conv) == 1
         assert conv.get_messages()[0]["role"] == "system"
-    
+
     def test_add_messages(self):
         conv = Conversation()
         conv.add_user_message("Hello")
         conv.add_assistant_message("Hi there!")
-        
+
         messages = conv.get_messages()
         assert len(messages) == 2
         assert messages[0]["role"] == "user"
         assert messages[1]["role"] == "assistant"
-    
+
     def test_clear_keeps_system_prompt(self):
         conv = Conversation(system_prompt="You are helpful.")
         conv.add_user_message("Hello")
         conv.clear()
-        
+
         messages = conv.get_messages()
         assert len(messages) == 1
         assert messages[0]["role"] == "system"
@@ -1089,15 +1091,15 @@ class TestConversation:
 
 class TestConfig:
     """Tests for configuration."""
-    
+
     def test_get_provider_openai(self):
         cfg = Config()
         assert cfg.get_provider("gpt-4") == "openai"
-    
+
     def test_get_provider_anthropic(self):
         cfg = Config()
         assert cfg.get_provider("claude-3-sonnet-20240229") == "anthropic"
-    
+
     def test_get_provider_unknown(self):
         cfg = Config()
         with pytest.raises(ValueError, match="Unknown model"):
@@ -1110,13 +1112,13 @@ class TestConfig:
 pytest tests/ -v
 pytest tests/ --cov=sage --cov-report=term-missing
 \`\`\`
-          \`
+          `
         },
         {
           id: "task-8",
           title: "Create README",
           description: "Write project documentation",
-          content: \`
+          content: `
 ### Create README.md
 
 \`\`\`markdown
@@ -1159,13 +1161,13 @@ sage translate "Hello" -t spanish
 
 MIT
 \`\`\`
-          \`
+          `
         },
         {
           id: "task-9",
           title: "Test Your CLI",
           description: "Manual testing checklist",
-          content: \`
+          content: `
 ### Manual Testing Checklist
 
 Run each command and verify it works:
@@ -1196,13 +1198,13 @@ sage summarize "The quick brown fox..."
 sage chat
 # Try: ask question, follow-up, /clear, /quit
 \`\`\`
-          \`
+          `
         },
         {
           id: "task-10",
           title: "Publish to GitHub",
           description: "Push your project to GitHub",
-          content: \`
+          content: `
 ### Initialize Git Repository
 
 \`\`\`bash
@@ -1241,9 +1243,9 @@ You've completed Day 1 and built your first AI-powered CLI tool!
 
 ### What You Learned
 
-✅ How Large Language Models work conceptually  
-✅ Understanding tokens, context windows, and parameters  
-✅ Using OpenAI and Anthropic Python SDKs  
+✅ How Large Language Models work conceptually
+✅ Understanding tokens, context windows, and parameters
+✅ Using OpenAI and Anthropic Python SDKs
 ✅ Building production-quality CLI with Click
 ✅ Implementing streaming responses
 ✅ Structuring a Python project for GitHub

@@ -1,12 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  BookOpen, Clock, CheckCircle2, ArrowRight, 
-  Sparkles, Code, Zap, Target
+import {
+  BookOpen, Clock, CheckCircle2, ArrowRight,
+  Sparkles, Code, Zap, Target, LucideIcon
 } from 'lucide-react';
 import { useProgressContext } from '../hooks/ProgressContext';
-import { courseRoadmap } from '../data/courseRoadmap';
 import { day1Content } from '../data/day1Content';
 import { day2Content } from '../data/day2Content';
 import { day3Content } from '../data/day3Content';
@@ -15,8 +14,21 @@ import { day5Content } from '../data/day5Content';
 import { day6Content } from '../data/day6Content';
 import { day7Content } from '../data/day7Content';
 
-export default function Dashboard() {
-  const { progress, getCompletedTasksCount } = useProgressContext();
+interface Stat {
+  label: string;
+  value: string;
+  icon: LucideIcon;
+  color: string;
+}
+
+interface Feature {
+  icon: LucideIcon;
+  title: string;
+  desc: string;
+}
+
+export default function Dashboard(): React.ReactElement {
+  const { getCompletedTasksCount } = useProgressContext();
 
   // Calculate stats across all 7 days
   const allDayContent = [
@@ -27,11 +39,11 @@ export default function Dashboard() {
   const totalTasks = allDayContent.reduce((total, dayContent) => {
     const dayTasks = dayContent.sections
       .filter(s => s.tasks)
-      .reduce((acc, s) => acc + s.tasks.length, 0);
+      .reduce((acc, s) => acc + (s.tasks?.length || 0), 0);
     return total + dayTasks;
   }, 0);
 
-  const completedTasks = allDayContent.reduce((total, dayContent, index) => {
+  const completedTasks = allDayContent.reduce((total, _, index) => {
     return total + getCompletedTasksCount(index + 1);
   }, 0);
 
@@ -41,7 +53,7 @@ export default function Dashboard() {
   const totalHoursLow = 4 + 5 + 6 + 6 + 8 + 6 + 6; // 41 hours
   const totalHoursHigh = 8 + 7 + 8 + 8 + 10 + 8 + 8; // 57 hours
 
-  const stats = [
+  const stats: Stat[] = [
     {
       label: 'Days Available',
       value: '7 / 7',
@@ -62,6 +74,13 @@ export default function Dashboard() {
     },
   ];
 
+  const features: Feature[] = [
+    { icon: Zap, title: 'LLM Fundamentals', desc: 'Tokens, context windows, parameters' },
+    { icon: Code, title: 'Python SDKs', desc: 'OpenAI and Anthropic integration' },
+    { icon: Target, title: 'CLI Development', desc: 'Build production-ready tools' },
+    { icon: Sparkles, title: 'Streaming', desc: 'Real-time response handling' },
+  ];
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -73,20 +92,20 @@ export default function Dashboard() {
         {/* Background decoration */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl" />
-        
+
         <div className="relative">
           <div className="flex items-center gap-2 text-brand-400 mb-4">
             <Sparkles size={16} />
             <span className="text-sm font-medium">Hands-On Learning Platform</span>
           </div>
-          
+
           <h1 className="text-4xl font-display font-bold text-white mb-4">
             LLM Engineering Course
           </h1>
-          
+
           <p className="text-lg text-surface-300 max-w-2xl mb-6">
-            Master Large Language Models through practical, project-based learning. 
-            Build real AI applications and create a portfolio of GitHub-ready projects.
+            Master Large Language Models through practical, project-based learning.
+            Build real AI applications through Hands-On Training.
           </p>
 
           <div className="flex flex-wrap gap-4">
@@ -148,7 +167,7 @@ export default function Dashboard() {
             {progressPercent}%
           </span>
         </div>
-        
+
         <div className="h-3 bg-surface-800 rounded-full overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
@@ -157,9 +176,9 @@ export default function Dashboard() {
             className="h-full bg-gradient-to-r from-brand-500 to-emerald-500 rounded-full"
           />
         </div>
-        
+
         <p className="mt-3 text-sm text-surface-400">
-          {completedTasks === 0 
+          {completedTasks === 0
             ? "Start Day 1 to begin tracking your progress"
             : `${completedTasks} of ${totalTasks} tasks completed in Day 1`
           }
@@ -175,7 +194,7 @@ export default function Dashboard() {
         <h2 className="text-xl font-display font-semibold text-white mb-4">
           Continue Learning
         </h2>
-        
+
         <Link
           to="/day/1"
           className="block bg-surface-900 border border-surface-800 rounded-xl p-6 hover:border-brand-500/50 transition-colors group"
@@ -190,15 +209,15 @@ export default function Dashboard() {
                   Python
                 </span>
               </div>
-              
+
               <h3 className="text-xl font-display font-semibold text-white mb-2 group-hover:text-brand-400 transition-colors">
                 LLM Fundamentals + CLI Assistant
               </h3>
-              
+
               <p className="text-surface-400 mb-4">
                 Learn how LLMs work and build your first AI-powered CLI tool
               </p>
-              
+
               <div className="flex items-center gap-6 text-sm text-surface-500">
                 <span className="flex items-center gap-1">
                   <Clock size={14} />
@@ -214,10 +233,10 @@ export default function Dashboard() {
                 </span>
               </div>
             </div>
-            
-            <ArrowRight 
-              size={24} 
-              className="text-surface-600 group-hover:text-brand-400 group-hover:translate-x-1 transition-all" 
+
+            <ArrowRight
+              size={24}
+              className="text-surface-600 group-hover:text-brand-400 group-hover:translate-x-1 transition-all"
             />
           </div>
         </Link>
@@ -232,14 +251,9 @@ export default function Dashboard() {
         <h2 className="text-xl font-display font-semibold text-white mb-4">
           What You'll Learn
         </h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[
-            { icon: Zap, title: 'LLM Fundamentals', desc: 'Tokens, context windows, parameters' },
-            { icon: Code, title: 'Python SDKs', desc: 'OpenAI and Anthropic integration' },
-            { icon: Target, title: 'CLI Development', desc: 'Build production-ready tools' },
-            { icon: Sparkles, title: 'Streaming', desc: 'Real-time response handling' },
-          ].map((feature, i) => (
+          {features.map((feature) => (
             <div
               key={feature.title}
               className="flex items-start gap-4 p-4 bg-surface-900/50 border border-surface-800 rounded-lg"

@@ -2,7 +2,27 @@ import { useState, useEffect } from 'react';
 
 const STORAGE_KEY = 'llm-course-progress';
 
-const initialProgress = {
+export interface Progress {
+  completedTasks: Record<number, string[]>;
+  completedDays: number[];
+  currentDay: number;
+  lastVisited: string | null;
+  totalTimeSpent: number;
+}
+
+export interface UseProgressReturn {
+  progress: Progress;
+  toggleTask: (dayId: number, taskId: string) => void;
+  isTaskCompleted: (dayId: number, taskId: string) => boolean;
+  getCompletedTasksCount: (dayId: number) => number;
+  markDayComplete: (dayId: number) => void;
+  isDayComplete: (dayId: number) => boolean;
+  setCurrentDay: (dayId: number) => void;
+  resetProgress: () => void;
+  getOverallProgress: (totalTasks: number) => number;
+}
+
+const initialProgress: Progress = {
   completedTasks: {},
   completedDays: [],
   currentDay: 1,
@@ -10,8 +30,8 @@ const initialProgress = {
   totalTimeSpent: 0,
 };
 
-export function useProgress() {
-  const [progress, setProgress] = useState(() => {
+export function useProgress(): UseProgressReturn {
+  const [progress, setProgress] = useState<Progress>(() => {
     if (typeof window === 'undefined') return initialProgress;
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : initialProgress;
@@ -21,16 +41,16 @@ export function useProgress() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
   }, [progress]);
 
-  const toggleTask = (dayId, taskId) => {
+  const toggleTask = (dayId: number, taskId: string): void => {
     setProgress(prev => {
       const dayTasks = prev.completedTasks[dayId] || [];
       const isCompleted = dayTasks.includes(taskId);
-      
+
       return {
         ...prev,
         completedTasks: {
           ...prev.completedTasks,
-          [dayId]: isCompleted 
+          [dayId]: isCompleted
             ? dayTasks.filter(t => t !== taskId)
             : [...dayTasks, taskId]
         }
@@ -38,28 +58,28 @@ export function useProgress() {
     });
   };
 
-  const isTaskCompleted = (dayId, taskId) => {
+  const isTaskCompleted = (dayId: number, taskId: string): boolean => {
     return (progress.completedTasks[dayId] || []).includes(taskId);
   };
 
-  const getCompletedTasksCount = (dayId) => {
+  const getCompletedTasksCount = (dayId: number): number => {
     return (progress.completedTasks[dayId] || []).length;
   };
 
-  const markDayComplete = (dayId) => {
+  const markDayComplete = (dayId: number): void => {
     setProgress(prev => ({
       ...prev,
-      completedDays: prev.completedDays.includes(dayId) 
-        ? prev.completedDays 
+      completedDays: prev.completedDays.includes(dayId)
+        ? prev.completedDays
         : [...prev.completedDays, dayId]
     }));
   };
 
-  const isDayComplete = (dayId) => {
+  const isDayComplete = (dayId: number): boolean => {
     return progress.completedDays.includes(dayId);
   };
 
-  const setCurrentDay = (dayId) => {
+  const setCurrentDay = (dayId: number): void => {
     setProgress(prev => ({
       ...prev,
       currentDay: dayId,
@@ -67,12 +87,12 @@ export function useProgress() {
     }));
   };
 
-  const resetProgress = () => {
+  const resetProgress = (): void => {
     setProgress(initialProgress);
     localStorage.removeItem(STORAGE_KEY);
   };
 
-  const getOverallProgress = (totalTasks) => {
+  const getOverallProgress = (totalTasks: number): number => {
     const completed = Object.values(progress.completedTasks).flat().length;
     return Math.round((completed / totalTasks) * 100);
   };

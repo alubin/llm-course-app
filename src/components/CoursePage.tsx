@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { 
+import {
   ChevronRight, ChevronDown, CheckCircle2, Circle,
-  Clock, Target, BookOpen, Code, ArrowLeft, ArrowRight,
+  Clock, Target, BookOpen, ArrowLeft,
   Copy, Check
 } from 'lucide-react';
 import { day1Content } from '../data/day1Content';
@@ -16,16 +16,38 @@ import { day5Content } from '../data/day5Content';
 import { day6Content } from '../data/day6Content';
 import { day7Content } from '../data/day7Content';
 import { useProgressContext } from '../hooks/ProgressContext';
+import { DayContent, Module, Task } from '../data/types';
 
-export default function CoursePage() {
-  const { dayId } = useParams();
-  const [activeSection, setActiveSection] = useState('theory');
-  const [expandedModules, setExpandedModules] = useState({});
-  const [expandedTasks, setExpandedTasks] = useState({});
+interface ModuleCardProps {
+  module: Module;
+  index: number;
+  expanded: boolean;
+  onToggle: () => void;
+}
+
+interface TaskCardProps {
+  task: Task;
+  index: number;
+  dayId: number;
+  expanded: boolean;
+  completed: boolean;
+  onToggleExpand: () => void;
+  onToggleComplete: () => void;
+}
+
+interface MarkdownContentProps {
+  content: string;
+}
+
+export default function CoursePage(): React.ReactElement {
+  const { dayId } = useParams<{ dayId: string }>();
+  const [activeSection, setActiveSection] = useState<string>('theory');
+  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
+  const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>({});
   const { toggleTask, isTaskCompleted, getCompletedTasksCount } = useProgressContext();
 
   // Map dayId to content
-  const contentMap = {
+  const contentMap: Record<string, DayContent> = {
     '1': day1Content,
     '2': day2Content,
     '3': day3Content,
@@ -35,23 +57,23 @@ export default function CoursePage() {
     '7': day7Content
   };
 
-  const content = contentMap[dayId] || day1Content;
+  const content = contentMap[dayId || '1'] || day1Content;
 
   const totalTasks = content.sections
     .filter(s => s.tasks)
-    .reduce((acc, s) => acc + s.tasks.length, 0);
-  
-  const completedTasks = getCompletedTasksCount(parseInt(dayId));
+    .reduce((acc, s) => acc + (s.tasks?.length || 0), 0);
+
+  const completedTasks = getCompletedTasksCount(parseInt(dayId || '1'));
   const progressPercent = Math.round((completedTasks / totalTasks) * 100);
 
-  const toggleModule = (moduleId) => {
+  const toggleModule = (moduleId: string): void => {
     setExpandedModules(prev => ({
       ...prev,
       [moduleId]: !prev[moduleId]
     }));
   };
 
-  const toggleTaskExpand = (taskId) => {
+  const toggleTaskExpand = (taskId: string): void => {
     setExpandedTasks(prev => ({
       ...prev,
       [taskId]: !prev[taskId]
@@ -65,8 +87,8 @@ export default function CoursePage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <Link 
-          to="/roadmap" 
+        <Link
+          to="/roadmap"
           className="inline-flex items-center gap-2 text-surface-400 hover:text-white mb-4 transition-colors"
         >
           <ArrowLeft size={16} />
@@ -83,11 +105,11 @@ export default function CoursePage() {
                 Python
               </span>
             </div>
-            
+
             <h1 className="text-3xl font-display font-bold text-white mb-2">
               {content.title}
             </h1>
-            
+
             <p className="text-surface-400 max-w-2xl">
               {content.subtitle}
             </p>
@@ -227,11 +249,11 @@ export default function CoursePage() {
                   key={task.id}
                   task={task}
                   index={index}
-                  dayId={parseInt(dayId)}
+                  dayId={parseInt(dayId || '1')}
                   expanded={expandedTasks[task.id] ?? false}
-                  completed={isTaskCompleted(parseInt(dayId), task.id)}
+                  completed={isTaskCompleted(parseInt(dayId || '1'), task.id)}
                   onToggleExpand={() => toggleTaskExpand(task.id)}
-                  onToggleComplete={() => toggleTask(parseInt(dayId), task.id)}
+                  onToggleComplete={() => toggleTask(parseInt(dayId || '1'), task.id)}
                 />
               ))}
             </motion.div>
@@ -242,7 +264,7 @@ export default function CoursePage() {
   );
 }
 
-function ModuleCard({ module, index, expanded, onToggle }) {
+function ModuleCard({ module, index, expanded, onToggle }: ModuleCardProps): React.ReactElement {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -282,7 +304,14 @@ function ModuleCard({ module, index, expanded, onToggle }) {
   );
 }
 
-function TaskCard({ task, index, dayId, expanded, completed, onToggleExpand, onToggleComplete }) {
+function TaskCard({
+  task,
+  index,
+  expanded,
+  completed,
+  onToggleExpand,
+  onToggleComplete
+}: TaskCardProps): React.ReactElement {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -317,15 +346,15 @@ function TaskCard({ task, index, dayId, expanded, completed, onToggleExpand, onT
             onClick={onToggleComplete}
             className={`
               p-2 rounded-lg transition-all
-              ${completed 
-                ? 'bg-brand-500/20 text-brand-400' 
+              ${completed
+                ? 'bg-brand-500/20 text-brand-400'
                 : 'bg-surface-800 text-surface-500 hover:text-white'
               }
             `}
           >
             {completed ? <CheckCircle2 size={24} /> : <Circle size={24} />}
           </button>
-          
+
           <button onClick={onToggleExpand}>
             {expanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
           </button>
@@ -343,7 +372,7 @@ function TaskCard({ task, index, dayId, expanded, completed, onToggleExpand, onT
           >
             <div className="p-6">
               <MarkdownContent content={task.content} />
-              
+
               {!completed && (
                 <button
                   onClick={onToggleComplete}
@@ -360,19 +389,19 @@ function TaskCard({ task, index, dayId, expanded, completed, onToggleExpand, onT
   );
 }
 
-function MarkdownContent({ content }) {
-  const [copiedCode, setCopiedCode] = useState(null);
+function MarkdownContent({ content }: MarkdownContentProps): React.ReactElement {
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
-  const copyCode = async (code, index) => {
+  const copyCode = async (code: string, index: string): Promise<void> => {
     await navigator.clipboard.writeText(code);
     setCopiedCode(index);
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
   // Simple markdown parser
-  const parseContent = (text) => {
+  const parseContent = (text: string): React.ReactElement[] => {
     const lines = text.trim().split('\n');
-    const elements = [];
+    const elements: React.ReactElement[] = [];
     let i = 0;
     let codeBlockIndex = 0;
 
@@ -382,24 +411,24 @@ function MarkdownContent({ content }) {
       // Code block
       if (line.startsWith('```')) {
         const language = line.slice(3).trim() || 'text';
-        const codeLines = [];
+        const codeLines: string[] = [];
         i++;
-        
+
         while (i < lines.length && !lines[i].startsWith('```')) {
           codeLines.push(lines[i]);
           i++;
         }
-        
+
         const code = codeLines.join('\n');
         const blockIndex = codeBlockIndex++;
-        
+
         elements.push(
           <div key={`code-${blockIndex}`} className="relative group my-4">
             <button
-              onClick={() => copyCode(code, blockIndex)}
+              onClick={() => copyCode(code, `code-${blockIndex}`)}
               className="absolute top-2 right-2 p-2 bg-surface-700 hover:bg-surface-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
             >
-              {copiedCode === blockIndex ? (
+              {copiedCode === `code-${blockIndex}` ? (
                 <Check size={16} className="text-brand-400" />
               ) : (
                 <Copy size={16} className="text-surface-400" />
@@ -456,12 +485,12 @@ function MarkdownContent({ content }) {
 
       // Table
       if (line.includes('|') && lines[i + 1]?.includes('---')) {
-        const tableRows = [];
+        const tableRows: string[] = [];
         while (i < lines.length && lines[i].includes('|')) {
           tableRows.push(lines[i]);
           i++;
         }
-        
+
         elements.push(
           <div key={`table-${i}`} className="overflow-x-auto my-4">
             <table className="w-full border-collapse">
@@ -505,7 +534,8 @@ function MarkdownContent({ content }) {
 
       // Numbered list
       if (/^\d+\.\s/.test(line)) {
-        const num = line.match(/^(\d+)/)[1];
+        const match = line.match(/^(\d+)/);
+        const num = match ? match[1] : '';
         const content = line.replace(/^\d+\.\s/, '');
         elements.push(
           <li key={i} className="flex items-start gap-2 text-surface-300 ml-4 my-1">
@@ -535,10 +565,10 @@ function MarkdownContent({ content }) {
     return elements;
   };
 
-  const parseInlineFormatting = (text) => {
+  const parseInlineFormatting = (text: string): React.ReactNode => {
     // Handle inline code
     const parts = text.split(/(`[^`]+`)/g);
-    
+
     return parts.map((part, i) => {
       if (part.startsWith('`') && part.endsWith('`')) {
         return (
@@ -547,7 +577,7 @@ function MarkdownContent({ content }) {
           </code>
         );
       }
-      
+
       // Handle bold
       const boldParts = part.split(/(\*\*[^*]+\*\*)/g);
       return boldParts.map((bp, j) => {

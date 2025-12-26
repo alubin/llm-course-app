@@ -1,4 +1,11 @@
-export const courseRoadmap = [
+import { CourseDay } from './types';
+
+export interface PythonPrimerTopic {
+  id: string;
+  title: string;
+}
+
+export const courseRoadmap: CourseDay[] = [
   {
     id: 1,
     title: "LLM Fundamentals + CLI Assistant",
@@ -78,7 +85,7 @@ export const courseRoadmap = [
   }
 ];
 
-export const pythonPrimerTopics = [
+export const pythonPrimerTopics: PythonPrimerTopic[] = [
   { id: "basics", title: "Python Basics Refresher" },
   { id: "type-hints", title: "Type Hints" },
   { id: "data-structures", title: "Data Structures" },

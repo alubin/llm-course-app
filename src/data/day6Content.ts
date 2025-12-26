@@ -1,4 +1,6 @@
-export const day6Content = {
+import type { DayContent } from './types';
+
+export const day6Content: DayContent = {
   id: 6,
   title: "AI Agents with Tool Use",
   subtitle: "Build autonomous agents that can use tools and APIs",
