@@ -10,7 +10,7 @@ export const day1Content: DayContent = {
   objectives: [
     "Explain how Large Language Models work at a conceptual level",
     "Understand tokens, context windows, and temperature parameters",
-    "Set up and use the OpenAI and Anthropic Python SDKs",
+    "Set up and use OpenAI, Anthropic, and Google Gemini SDKs",
     "Build a production-quality CLI application with Click",
     "Implement streaming responses for better UX",
     "Handle errors gracefully and manage API costs",
@@ -21,7 +21,7 @@ export const day1Content: DayContent = {
     { name: "Python", details: "Version 3.9+ installed" },
     { name: "Git", details: "Basic Git knowledge (clone, commit, push)" },
     { name: "Terminal", details: "Comfortable with command line" },
-    { name: "API Key", details: "OpenAI or Anthropic API key (free tier works)" },
+    { name: "API Key", details: "OpenAI, Anthropic, or Gemini API key (free tiers available)" },
     { name: "Code Editor", details: "VS Code, PyCharm, or similar" }
   ],
 
@@ -29,6 +29,7 @@ export const day1Content: DayContent = {
     { name: "Python 3.9+", purpose: "Core programming language" },
     { name: "OpenAI SDK", purpose: "Access to GPT models" },
     { name: "Anthropic SDK", purpose: "Access to Claude models" },
+    { name: "Google Generative AI", purpose: "Access to Gemini models" },
     { name: "Click", purpose: "Building CLI interfaces" },
     { name: "Rich", purpose: "Beautiful terminal formatting" },
     { name: "python-dotenv", purpose: "Environment variable management" }
@@ -637,12 +638,13 @@ requires-python = ">=3.9"
 authors = [
     {name = "Your Name", email = "your.email@example.com"}
 ]
-keywords = ["ai", "cli", "llm", "assistant", "openai", "anthropic"]
+keywords = ["ai", "cli", "llm", "assistant", "openai", "anthropic", "gemini"]
 
 dependencies = [
     "click>=8.1.0",
     "openai>=1.0.0",
     "anthropic>=0.18.0",
+    "google-generativeai>=0.5.0",
     "python-dotenv>=1.0.0",
     "rich>=13.0.0",
     "tiktoken>=0.5.0",
@@ -704,8 +706,18 @@ Thumbs.db
 
 \`\`\`bash
 # Copy this file to .env and fill in your API keys
+# You only need ONE of these API keys to get started
+
+# OpenAI (GPT-4, GPT-3.5) - https://platform.openai.com/api-keys
 OPENAI_API_KEY=sk-your-openai-key-here
+
+# Anthropic (Claude) - https://console.anthropic.com/settings/keys
 ANTHROPIC_API_KEY=sk-ant-your-anthropic-key-here
+
+# Google Gemini (free tier!) - https://aistudio.google.com/apikey
+GEMINI_API_KEY=your-gemini-key-here
+
+# Default settings
 DEFAULT_MODEL=gpt-4
 DEFAULT_TEMPERATURE=0.7
 \`\`\`
@@ -765,6 +777,7 @@ class Config:
     # API Keys
     openai_api_key: Optional[str] = None
     anthropic_api_key: Optional[str] = None
+    gemini_api_key: Optional[str] = None
 
     # Model settings
     default_model: str = "gpt-4"
@@ -774,6 +787,7 @@ class Config:
     # Available models
     OPENAI_MODELS = ["gpt-4", "gpt-4-turbo", "gpt-3.5-turbo"]
     ANTHROPIC_MODELS = ["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"]
+    GEMINI_MODELS = ["gemini-2.5-flash", "gemini-1.5-pro", "gemini-1.5-flash"]
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -781,6 +795,7 @@ class Config:
         return cls(
             openai_api_key=os.getenv("OPENAI_API_KEY"),
             anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"),
+            gemini_api_key=os.getenv("GEMINI_API_KEY"),
             default_model=os.getenv("DEFAULT_MODEL", "gpt-4"),
             default_temperature=float(os.getenv("DEFAULT_TEMPERATURE", "0.7")),
             max_tokens=int(os.getenv("MAX_TOKENS", "2048")),
@@ -792,6 +807,8 @@ class Config:
             return "openai"
         elif model in self.ANTHROPIC_MODELS or model.startswith("claude"):
             return "anthropic"
+        elif model in self.GEMINI_MODELS or model.startswith("gemini"):
+            return "gemini"
         else:
             raise ValueError(f"Unknown model: {model}")
 
@@ -809,6 +826,11 @@ class Config:
             raise ValueError(
                 "Anthropic API key not found. "
                 "Set ANTHROPIC_API_KEY in your .env file or environment."
+            )
+        elif provider == "gemini" and not self.gemini_api_key:
+            raise ValueError(
+                "Gemini API key not found. "
+                "Set GEMINI_API_KEY in your .env file or environment."
             )
 
 
@@ -829,7 +851,7 @@ config = Config.from_env()
 LLM client module for Sage CLI.
 
 This module provides a unified interface for interacting with
-multiple LLM providers (OpenAI, Anthropic).
+multiple LLM providers (OpenAI, Anthropic, Google Gemini).
 """
 
 from abc import ABC, abstractmethod
@@ -837,6 +859,7 @@ from typing import Generator, List, Optional
 
 from openai import OpenAI
 from anthropic import Anthropic
+import google.generativeai as genai
 
 from sage.config import config, Config
 
@@ -968,6 +991,85 @@ class AnthropicClient(BaseLLMClient):
                 yield text
 
 
+class GeminiClient(BaseLLMClient):
+    """Google Gemini API client."""
+
+    def __init__(self, api_key: str, model: str = "gemini-2.5-flash"):
+        genai.configure(api_key=api_key)
+        self.model = genai.GenerativeModel(model)
+        self.model_name = model
+
+    def _convert_messages(self, messages: List[Message]) -> tuple[str, list]:
+        """Convert messages to Gemini format."""
+        system_prompt = ""
+        history = []
+
+        for msg in messages:
+            if msg["role"] == "system":
+                system_prompt = msg["content"]
+            elif msg["role"] == "user":
+                history.append({"role": "user", "parts": [msg["content"]]})
+            elif msg["role"] == "assistant":
+                history.append({"role": "model", "parts": [msg["content"]]})
+
+        return system_prompt, history
+
+    def chat(
+        self,
+        messages: List[Message],
+        temperature: float = 0.7,
+        max_tokens: int = 2048,
+    ) -> str:
+        """Send a chat request and return the response."""
+        system_prompt, history = self._convert_messages(messages)
+
+        # Start chat with history (excluding last user message)
+        chat = self.model.start_chat(history=history[:-1] if len(history) > 1 else [])
+
+        # Get last user message
+        last_message = history[-1]["parts"][0] if history else ""
+        if system_prompt:
+            last_message = f"{system_prompt}\\n\\n{last_message}"
+
+        response = chat.send_message(
+            last_message,
+            generation_config=genai.types.GenerationConfig(
+                temperature=temperature,
+                max_output_tokens=max_tokens,
+            )
+        )
+
+        return response.text
+
+    def chat_stream(
+        self,
+        messages: List[Message],
+        temperature: float = 0.7,
+        max_tokens: int = 2048,
+    ) -> Generator[str, None, None]:
+        """Send a chat request and stream the response."""
+        system_prompt, history = self._convert_messages(messages)
+
+        chat = self.model.start_chat(history=history[:-1] if len(history) > 1 else [])
+
+        last_message = history[-1]["parts"][0] if history else ""
+        if system_prompt:
+            last_message = f"{system_prompt}\\n\\n{last_message}"
+
+        response = chat.send_message(
+            last_message,
+            generation_config=genai.types.GenerationConfig(
+                temperature=temperature,
+                max_output_tokens=max_tokens,
+            ),
+            stream=True,
+        )
+
+        for chunk in response:
+            if chunk.text:
+                yield chunk.text
+
+
 def get_client(
     model: Optional[str] = None,
     config_instance: Optional[Config] = None,
@@ -984,6 +1086,8 @@ def get_client(
         return OpenAIClient(api_key=cfg.openai_api_key, model=model)
     elif provider == "anthropic":
         return AnthropicClient(api_key=cfg.anthropic_api_key, model=model)
+    elif provider == "gemini":
+        return GeminiClient(api_key=cfg.gemini_api_key, model=model)
     else:
         raise ValueError(f"Unknown provider: {provider}")
 
@@ -1371,7 +1475,7 @@ An AI-powered command-line assistant.
 
 ## ✨ Features
 
-- 🤖 **Multiple AI Providers** - OpenAI (GPT-4) and Anthropic (Claude)
+- 🤖 **Multiple AI Providers** - OpenAI (GPT-4), Anthropic (Claude), and Google Gemini
 - 💬 **Interactive Chat** - Conversation context
 - ⚡ **Streaming Responses** - Real-time output
 - 📝 **Summarization** - Summarize text and files
@@ -1488,7 +1592,7 @@ You've completed Day 1 and built your first AI-powered CLI tool!
 
 ✅ How Large Language Models work conceptually
 ✅ Understanding tokens, context windows, and parameters
-✅ Using OpenAI and Anthropic Python SDKs
+✅ Using OpenAI, Anthropic, and Google Gemini Python SDKs
 ✅ Building production-quality CLI with Click
 ✅ Implementing streaming responses
 ✅ Structuring a Python project for GitHub
